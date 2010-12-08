@@ -1,9 +1,11 @@
+-- | Author: Thorsten Rangwich
+-- | See file LICENSE for details on using this code.
 -- | This module contains a TCP/IP socket server that executes functions
--- over a network socket. A particular protocol is used to send a one
--- line request with a function name and parameters. The function is
--- executed and the result sent back to the caller. Results are provided
--- in a table like form, where each row may even contain a different number
--- of columns.
+-- | over a network socket. A particular protocol is used to send a one
+-- | line request with a function name and parameters. The function is
+-- | executed and the result sent back to the caller. Results are provided
+-- | in a table like form, where each row may even contain a different number
+-- | of columns.
 module SocketServer
 (
  -- * Public API functions

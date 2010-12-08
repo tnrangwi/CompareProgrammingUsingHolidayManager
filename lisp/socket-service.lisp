@@ -1,3 +1,6 @@
+; Author: Thorsten Rangwich
+; See file LICENSE for copyright and usage of this code.
+; This is a simple remote procedure server and client.
 (require :sb-bsd-sockets)
 					; FIXME: Free ports properly - does not seem to work, although I close anything.
 					; FIXME: Unix does not send a proper CRLF in socket connections

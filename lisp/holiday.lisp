@@ -1,10 +1,13 @@
+;;; Author: Thorsten Rangwich
+;;; See file LICENSE for copyright and usage of this code.
+;;;
 ;;; holiday-manager package
 ;;;
 ;;; Implements old interface already implemented in Perl and Python.
 ;;; Files now should be stored in a more flexible format, but I stay compatible
 ;;; to the old implementations for backtesting.
 
-;(require :socket-service :basetools)
+;(require :socket-service :basetools) ; Well, I did not get this up and running yet. sbcl is a bit complicated with that.
 
 (defpackage holiday-manager
   (:use :cl :socket-service :basetools)

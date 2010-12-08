@@ -1,3 +1,6 @@
+;;; Author: Thorsten Rangwich
+;;; See file LICENSE for copyright and usage of this code.
+;;;
 ;;; Tools package, some base tools used everywhere are defined here
 ;; ToDo:
 ;; Add logger

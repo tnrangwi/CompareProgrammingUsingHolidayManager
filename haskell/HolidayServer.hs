@@ -1,3 +1,8 @@
+-- | Author: Thorsten Rangwich
+-- | See file LICENSE for details on using this code.
+-- | This file contains the code needed for the holiday server:
+-- | A server process maintaining holiday schedules of several
+-- | people in the file system, being available via a network socket.
 module HolidayServer
 (
  startHolidayServer

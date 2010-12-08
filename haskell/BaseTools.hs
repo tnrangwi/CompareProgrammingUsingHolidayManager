@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-} -- This is to make GetCfg's getItem work with String result as well.
 {-# LANGUAGE TypeSynonymInstances #-} -- Same topic. Both seem to be widely used.
+-- | Author: Thorsten Rangwich
+-- | See file LICENSE for details on using this code.
 -- | This module contains some base tools like reading a configuration file.
 module BaseTools
     (

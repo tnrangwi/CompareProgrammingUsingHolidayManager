@@ -1,12 +1,17 @@
 #!/localhome/tnrangwi/bin/sbcl --script
+; Author: Thorsten Rangwich
+; See file LICENSE for copyright and usage of this code.
+; This tests the socket server. One function is pushed to
+; the server and then the server is run.
+
 (load "basetools.lisp")
 (load "socket-service.lisp")
 (defvar *server* (make-instance 'socket-service:socket-server :privileged-addresses '("127.0.0.1") :bindaddr "127.0.0.1" :port 1971))
 
 (socket-service:push-handler
- *server* 
- "echo" 
- (lambda (argv fdfunc mem &key &allow-other-keys)
+ *server* ; the socket server, where to add the function
+ "echo" ; the server's name of the function
+ (lambda (argv fdfunc mem &key &allow-other-keys)  ; well, the function itself. The signature is documented in the interface.
    (let ((echo-counter (basetools:getattr mem "echo-counter")))
      (if (eq echo-counter NIL) (setf echo-counter 0))
      (incf echo-counter)
@@ -17,5 +22,5 @@
      (funcall fdfunc argv)
      (funcall fdfunc))))
 
-(socket-service:run-services-until-shutdown *server*)
-(format T "finished!")
+(socket-service:run-services-until-shutdown *server*) ; effectively now run the socket server, with this one function added.
+(format T "finished!") ; something made the server shut down.
