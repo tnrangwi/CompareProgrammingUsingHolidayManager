@@ -1,0 +1,35 @@
+BASIC PURPOSE
+
+
+This is my sample project to work into a new programming language.
+Currently there are implementations in Perl, Python, Lisp and
+- unfinished - Haskell. Usually I test this using telnet on the command
+line, but there is a VBA client and the Lisp implementation contains
+a client as well.
+
+The origin of this work is the Perl 5.8 server code and the VBA (Excel)
+client. It was written for Nagler & Company (C), Schaittenbach.
+Its usage simply was to have a "arbitrary software project
+doing something useful". It was used for training in revision control
+software and for a business presentation about advanced software management.
+(That's why there is a GUI).
+
+
+It has proved quite useful for me as it combines file I/O, a very basic
+implementation of remote procedure calls and solutions suitable to
+object orientated, functional and procedural programming. Languages
+like Python ship with its own SocketServer while Lisp ships without
+even a standard socket interface.
+
+
+
+WHAT DOES IT
+
+
+In every programming languages there is a remote procedure call server
+using TCP/IP for communication. It is - on purpose - single threaded and
+blocking. During startup it loads a list of users, a group for every
+user and a list of holiday schedules for any user. Admin users may
+create new users, standard users are allowed to add, delete and modify
+holiday schedules. If you know the protocol, it is easy for any user
+to modify holiday schedules for an arbitrary user using telnet.
