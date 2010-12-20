@@ -6,6 +6,22 @@
 -- | executed and the result sent back to the caller. Results are provided
 -- | in a table like form, where each row may even contain a different number
 -- | of columns.
+-- | A particular function interface is specified. Users of the socket server
+-- | implement these non network functions with this protocol and the server provides
+-- | them over the network. Every function is a either a pure function or a pair
+-- | of a pure function and an IO function. The pure function returns a possibly
+-- | modified state dictionary, but is not allowed to do IO.
+-- | In the case of a pair of functions, the pure function returns the modified
+-- | state dictionary *and* a number of arguments the non pure function can
+-- | read as commands. The non pure function is not allowed to return a modified
+-- | state but its is effect are side effects only.
+-- | There is a special case of a shutdown function (pure function), that returns
+-- | a flag, if the server shall shut down.
+-- | Once started, the server waits for network calls and calls the registered
+-- | network functions until receiving a shutdown call.
+-- | By default, a shutdown is initiated if the server receives a function call
+-- | named shutdown. You can override by defining a function named shutdown.
+-- | 
 module SocketServer
 (
  -- * Public API functions

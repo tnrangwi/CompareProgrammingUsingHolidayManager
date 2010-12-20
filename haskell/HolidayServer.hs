@@ -24,6 +24,9 @@ import qualified Control.Monad as MControl
 usrExtension :: String
 usrExtension = "usr"
 
+-- | Separator used for the configuraton files.
+fieldSeparator :: Char
+separator = '|'
 
 -- | File suffix including dot for files containing user holidays
 usrFileSuffix :: String
@@ -73,7 +76,7 @@ readUsrFromList (x:xs) = UsrSettings x (readUsrHolidays xs)
 -- | the corresponding holiday type-safe. Throws an exception if format does not match.
 createHolidayFromString :: String -- ^ String like "20122512|12", separator is taken from SocketServer module.
                         -> Holiday -- ^ Packaged holiday.
-createHolidayFromString s = let splitted =  BaseTools.splitBy SocketServer.separator s
+createHolidayFromString s = let splitted =  BaseTools.splitBy fieldSeparator s
                             in case length splitted of
                                  2 -> Holiday (BaseTools.getDateInt . read . head $ splitted) (read $ splitted!!1)
                                  otherwise -> error $ "Invalid string representation of holiday:" ++ s

@@ -29,7 +29,12 @@ WHAT DOES IT
 In every programming languages there is a remote procedure call server
 using TCP/IP for communication. It is - on purpose - single threaded and
 blocking. During startup it loads a list of users, a group for every
-user and a list of holiday schedules for any user. Admin users may
-create new users, standard users are allowed to add, delete and modify
-holiday schedules. If you know the protocol, it is easy for any user
-to modify holiday schedules for an arbitrary user using telnet.
+user and a list of holiday schedules for any user. Then it receives
+a single command line over the TCP/IP connection and executes it
+as a network function. It passes back a result line (at least one,
+possbibly several lines) and closes the connection.
+
+Admin users may create new users, standard users are allowed to add,
+delete and modify holiday schedules. If you know the protocol,
+it is easy for any userto modify holiday schedules for an arbitrary
+user using telnet.
