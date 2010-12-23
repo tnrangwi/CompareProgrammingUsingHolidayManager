@@ -26,7 +26,7 @@ usrExtension = "usr"
 
 -- | Separator used for the configuraton files.
 fieldSeparator :: Char
-separator = '|'
+fieldSeparator = '|'
 
 -- | File suffix including dot for files containing user holidays
 usrFileSuffix :: String
@@ -39,9 +39,10 @@ type UsrGroup = String
 
 
 -- | Data type representing a single holiday schedule.
-data Holiday = Holiday
-               BaseTools.DateInt -- ^ Start date of holiday
-               BaseTools.PositiveInt -- ^ Number of days. Must be greater than zero.
+data Holiday = Holiday {
+      firstOfHoliday :: BaseTools.DateInt, -- ^ Start date of holiday
+      lengthOfHoliday :: BaseTools.PositiveInt -- ^ Number of days. Must be greater than zero.
+    }
                deriving Show
 
 
@@ -49,12 +50,6 @@ data Holiday = Holiday
 lastOfHoliday :: Holiday -- ^ Holiday to examine
               -> BaseTools.DateInt -- ^ Last day of the holiday.
 lastOfHoliday (Holiday s d) = BaseTools.dateAdd s $ BaseTools.fromPositiveInt d - 1
-
-
--- | Extract start date from holiday.
-firstOfHoliday :: Holiday -- ^ Holiday to explore.
-               -> BaseTools.DateInt -- ^ Return 1st date.
-firstOfHoliday (Holiday s _) = s
 
 
 -- | Settings of one single user. Consists of the user's group and the list of holidays.
@@ -112,6 +107,14 @@ extractIO :: (x, IO y) -> IO (x, y)
 -- | Remember for any Monad m: (>>=)  :: m a' -> (a' -> m b') -> m b'
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
+-- Network functions
+
+_getAllUsers :: BaseTools.Dictionary -- ^ Status input
+             -> Bool -- ^ If access via privileged connection
+             -> [String] -- ^ Parameter list input. This function has no parameters.
+             -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, list of users, empty list of modifications
+--_getAllUsers state _ _ = map (\x -> [x]) (Map.keys ((Map.!) state "user-config"))
+_getAllUsers = error "NYI"
 
 -- | Function starting holiday server, running until shutdown received via network
 startHolidayServer :: Maybe String -- ^ Config file name without path, defaults to "holiday.conf"
@@ -124,14 +127,28 @@ startHolidayServer cFile cDir wDir = do
   -- Read in global configuration file with general settings. Will fail on I/O or parse error.
   let configFileName = MayBe.fromMaybe "." cDir </> MayBe.fromMaybe "holiday.conf" cFile
   config <- MControl.liftM (head . (\x->(Map.!) x "global")) (BaseTools.readConfigFile configFileName)
+  -- Wow! BaseTools.get extracts the values from CfItem. Inheritance and type system does the rest.
+  let privileged = (map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)))::[String]
+
 
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
   usrNamesFromFiles <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
   usrData <- MControl.liftM Map.fromList (MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNamesFromFiles))
+  -- This is sufficient, but cannot be transferred via the socket server. Only fixed data typpes, no arbitrary
+  -- data types.
+  -- We build a Dictionary from that now.
+  -- CfDict (fromList [("end",[CfInt 20020105,CfInt 20020207]),("start",[CfInt 20020101,CfInt 20020201])])
+  let usrDataDict = (error "Hello")
+
+  --let state = (Map.fromList [("user-config", usrData), ("workdir", workDir)])
+  let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict usrDataDict])]
 
   -- Setup socket connection, map network functions. This may fail as well.
-
+  let socket = SocketServer.connectionDefault
+  -- FIXME: Use foldl to add the complete list
+  let funcReg = SocketServer.pushHandler Map.empty "getu" (SocketServer.SyncLess _getAllUsers)
   -- Start socket server, process requests. Errors on a single request have to be caught.
+  SocketServer.serveSocketUntilShutdown funcReg state socket
   -- Garbage received over the network must not crash the server.
 
   return ()
