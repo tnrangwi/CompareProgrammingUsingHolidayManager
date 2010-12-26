@@ -12,12 +12,13 @@ module BaseTools
      Dictionary,
      UnpackCfg(..),
      DateInt,
-     PositiveInt,
      getDateInt,
      fromDateInt,
+     dateFromDateInt,
      dateAdd,
-     getPositiveInt,
+     PositiveInt,
      fromPositiveInt,
+     getPositiveInt,
      getItems,
      splitBy,
      splitBy',
@@ -224,15 +225,15 @@ getDateInt di = let (y, m, d) = dateComponentsFromInt di
 
 -- | Function to extract Int in which the date is stored from a DateInt. This
 -- | is needed only for internal usage. No need to export this.
-extractInt :: DateInt -- ^ DateInt input
-           -> Int -- ^ The constructed integer carrying the date information.
-extractInt (CreateDateInt di) = di
+fromDateInt :: DateInt -- ^ DateInt input
+            -> Int -- ^ The constructed integer carrying the date information.
+fromDateInt (CreateDateInt di) = di
 
 -- | Function to create a real date from an integer packed date.
-fromDateInt :: DateInt -- ^ DateInt input
-            -> Date.Day -- ^ Haskell standard Day equivalent value.
-fromDateInt di = let (y, m, d) = dateComponentsFromInt (extractInt di)
-                 in Date.fromGregorian (fromIntegral y) m d
+dateFromDateInt :: DateInt -- ^ DateInt input
+                -> Date.Day -- ^ Haskell standard Day equivalent value.
+dateFromDateInt di = let (y, m, d) = dateComponentsFromInt (fromDateInt di)
+                     in Date.fromGregorian (fromIntegral y) m d
 
 -- | Shift a date by a certain positive or negative amount of days. This method fails if the shift
 -- | is large enough to get out of the allowed range.

@@ -9,6 +9,8 @@ module HolidayServer
 )
 where
 
+-- FIXME: UsrSettings should have record format
+
 import qualified BaseTools
 import qualified SocketServer
 import qualified Data.Map as Map
@@ -53,7 +55,10 @@ lastOfHoliday (Holiday s d) = BaseTools.dateAdd s $ BaseTools.fromPositiveInt d 
 
 
 -- | Settings of one single user. Consists of the user's group and the list of holidays.
-data UsrSettings = UsrSettings UsrGroup [Holiday] -- ^ Pass user's group and list of all holidays.
+data UsrSettings = UsrSettings { 
+      usrGroup :: UsrGroup, -- ^ group of this user
+      holidayList :: [Holiday] -- ^ list of holidays of this user
+    }
 
 
 -- | Read file containing settings for one single user.
@@ -100,6 +105,23 @@ usrNameListFromFileList xs = foldr step [] xs
                     | otherwise = ys
               where  l x = length x - length usrFileSuffix 
 
+-- | Package a single user's settings into general structure suitable for SocketServer. All values must be
+-- | lists of ConfigItem. A (hierarchical) dirctionary has string keys and always lists of
+-- | ConfigItem values.
+packageUsr :: UsrSettings -- ^ User settings to package
+           -> [BaseTools.ConfigItem] -- ^ One dictionary in this list containing all user settings.
+packageUsr settings =
+    [
+     BaseTools.CfDict $ Map.fromList [
+                   ("group", [BaseTools.CfString $ usrGroup settings]),
+                   ("start", map 
+                               (BaseTools.CfInt . BaseTools.fromDateInt . firstOfHoliday)
+                               (holidayList settings)),
+                   ("length", map
+                                (BaseTools.CfInt . BaseTools.fromPositiveInt . lengthOfHoliday)
+                                (holidayList settings))
+                  ]
+    ]
 
 -- | Small stub to get tuple into IO monad. Used to combine it with some standard monad helpers.
 extractIO :: (x, IO y) -> IO (x, y)
@@ -108,13 +130,22 @@ extractIO :: (x, IO y) -> IO (x, y)
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
 -- Network functions
+--map (\x -> [x]) (Map.keys ((Map.!) state "user-config"))
 
+-- | Return the list of all users registered in the "Holiday" system.
 _getAllUsers :: BaseTools.Dictionary -- ^ Status input
              -> Bool -- ^ If access via privileged connection
              -> [String] -- ^ Parameter list input. This function has no parameters.
              -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, list of users, empty list of modifications
---_getAllUsers state _ _ = map (\x -> [x]) (Map.keys ((Map.!) state "user-config"))
-_getAllUsers = error "NYI"
+_getAllUsers state _ _ = ( 
+                          state,
+                          map (\x->[x]) $
+                              Map.keys (
+                                        (BaseTools.get . head $ (Map.!) state "user")::BaseTools.Dictionary
+                                       ), -- ghc needs a bit help here - does not derive the needed type properly
+                          []
+                         )
+
 
 -- | Function starting holiday server, running until shutdown received via network
 startHolidayServer :: Maybe String -- ^ Config file name without path, defaults to "holiday.conf"
@@ -134,14 +165,13 @@ startHolidayServer cFile cDir wDir = do
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
   usrNamesFromFiles <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
   usrData <- MControl.liftM Map.fromList (MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNamesFromFiles))
-  -- This is sufficient, but cannot be transferred via the socket server. Only fixed data typpes, no arbitrary
+  -- This is sufficient, but cannot be transferred via the socket server. Only fixed data types, no arbitrary
   -- data types.
-  -- We build a Dictionary from that now.
+  -- We build a BaseTools.Dictionary from that now.
   -- CfDict (fromList [("end",[CfInt 20020105,CfInt 20020207]),("start",[CfInt 20020101,CfInt 20020201])])
-  let usrDataDict = (error "Hello")
+  let packageableDataDict = Map.map packageUsr usrData
 
-  --let state = (Map.fromList [("user-config", usrData), ("workdir", workDir)])
-  let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict usrDataDict])]
+  let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict packageableDataDict])]
 
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault
