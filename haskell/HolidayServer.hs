@@ -91,7 +91,7 @@ readUsrHolidays xs = foldr step [] xs
     where step x [] = [createHolidayFromString x]
           step x xs | lastOfHoliday extractedHoliday < firstOfHoliday followingHoliday = extractedHoliday:xs
                     | otherwise = error $
-                                  "Overlapping holidays:" ++ (show extractedHoliday) ++ "->" ++ (show followingHoliday)
+                                  "Overlapping holidays:" ++ show extractedHoliday ++ "->" ++ show followingHoliday
               where extractedHoliday = createHolidayFromString x
                     followingHoliday = head xs
 
@@ -130,18 +130,21 @@ extractIO :: (x, IO y) -> IO (x, y)
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
 -- Network functions
---map (\x -> [x]) (Map.keys ((Map.!) state "user-config"))
 
 -- | Return the list of all users registered in the "Holiday" system.
 _getAllUsers :: BaseTools.Dictionary -- ^ Status input
              -> Bool -- ^ If access via privileged connection
              -> [String] -- ^ Parameter list input. This function has no parameters.
              -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, list of users, empty list of modifications
+-- The colon looks a bit strange at my first sight. Every x has to be packaged in a list by map. Instead of \x->[x]
+-- it is natural to use \x->x`:`[], which is (: []) applied to x. The infix operator given with a second argument
+-- returns a function. The only remaining argument then is the first argument. Currying in the 1st argument.
+-- Never have seen that up to now... hlint knows better. ((:) []) x gives an error and would expect ((:) x) [].
 _getAllUsers state _ _ = ( 
                           state,
-                          map (\x->[x]) $
+                          map (: []) $
                               Map.keys (
-                                        (BaseTools.get . head $ (Map.!) state "user")::BaseTools.Dictionary
+                                        BaseTools.get . head $ (Map.!) state "user" :: BaseTools.Dictionary
                                        ), -- ghc needs a bit help here - does not derive the needed type properly
                           []
                          )
@@ -159,9 +162,9 @@ startHolidayServer cFile cDir wDir = do
   let configFileName = MayBe.fromMaybe "." cDir </> MayBe.fromMaybe "holiday.conf" cFile
   print ("Read config file:" ++ configFileName ++ ".")
   config <- MControl.liftM (head . (\x->(Map.!) x "global")) (BaseTools.readConfigFile configFileName)
-  print ("Config:" ++ (show config))
+  print ("Config:" ++ show config)
   -- Wow! BaseTools.get extracts the values from CfItem. Inheritance and type system does the rest.
-  let privileged = (map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)))::[String]
+  let privileged = map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)) :: [String]
 
 
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
