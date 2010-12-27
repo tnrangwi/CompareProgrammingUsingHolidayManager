@@ -157,18 +157,19 @@ startHolidayServer cFile cDir wDir = do
 
   -- Read in global configuration file with general settings. Will fail on I/O or parse error.
   let configFileName = MayBe.fromMaybe "." cDir </> MayBe.fromMaybe "holiday.conf" cFile
+  print ("Read config file:" ++ configFileName ++ ".")
   config <- MControl.liftM (head . (\x->(Map.!) x "global")) (BaseTools.readConfigFile configFileName)
+  print ("Config:" ++ (show config))
   -- Wow! BaseTools.get extracts the values from CfItem. Inheritance and type system does the rest.
   let privileged = (map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)))::[String]
 
 
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
   usrNamesFromFiles <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
-  usrData <- MControl.liftM Map.fromList (MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNamesFromFiles))
+  usrData <- MControl.liftM Map.fromList (MControl.sequence (map (\x -> extractIO (x, readUsrFile (x ++ usrFileSuffix))) usrNamesFromFiles))
   -- This is sufficient, but cannot be transferred via the socket server. Only fixed data types, no arbitrary
   -- data types.
-  -- We build a BaseTools.Dictionary from that now.
-  -- CfDict (fromList [("end",[CfInt 20020105,CfInt 20020207]),("start",[CfInt 20020101,CfInt 20020201])])
+  -- We build a BaseTools.Dictionary from that now. Dynamic would be a better idea. SocketServer has to be changed for that.
   let packageableDataDict = Map.map packageUsr usrData
 
   let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict packageableDataDict])]
