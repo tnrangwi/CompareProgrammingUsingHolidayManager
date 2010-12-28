@@ -15,6 +15,7 @@ module BaseTools
      getDateInt,
      fromDateInt,
      dateFromDateInt,
+     getDateIntFromDayOfYearInt,
      dateAdd,
      PositiveInt,
      fromPositiveInt,
@@ -222,6 +223,16 @@ getDateInt di = let (y, m, d) = dateComponentsFromInt di
                 in if and [(di >= 19000101), (di <= 20991231), (m >= 1), (m <= 12), (d >= 1), (d <= maxInMonth m y)]
                    then CreateDateInt di
                    else error ("Invalid integer to create date:" ++ show di)
+
+-- | Unusual format: 12005 for 01.01.2005, 322005 for 01.02.2005. HolidayServer needs that.
+getDateIntFromDayOfYearInt :: Int
+                           -> DateInt
+getDateIntFromDayOfYearInt d = let year = fromIntegral $ d `mod` 10000
+                                   dInYear = fromIntegral $ d `div` 10000
+                               in let (_, month, day) = Date.toGregorian . Date.addDays (dInYear-1) $
+                                                        Date.fromGregorian year 1 1
+                                  in getDateInt (fromIntegral year * 10000 + month * 100 + day)
+                                                           
 
 -- | Function to extract Int in which the date is stored from a DateInt. This
 -- | is needed only for internal usage. No need to export this.
