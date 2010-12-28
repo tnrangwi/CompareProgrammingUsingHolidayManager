@@ -9,7 +9,7 @@ module HolidayServer
 )
 where
 
--- FIXME: UsrSettings should have record format
+-- FIXME: We have to evaluate the structures after reading in and starting up the holiday server.
 
 import qualified BaseTools
 import qualified SocketServer
@@ -78,7 +78,9 @@ createHolidayFromString :: String -- ^ String like "20122512|12", separator is t
                         -> Holiday -- ^ Packaged holiday.
 createHolidayFromString s = let splitted =  BaseTools.splitBy fieldSeparator s
                             in case length splitted of
-                                 2 -> Holiday (BaseTools.getDateInt . read . head $ splitted) (read $ splitted!!1)
+                                 2 -> Holiday
+                                      (BaseTools.getDateIntFromDayOfYearInt . read . head $ splitted)
+                                      (read $ splitted!!1)
                                  otherwise -> error $ "Invalid string representation of holiday:" ++ s
 
 
