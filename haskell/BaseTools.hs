@@ -240,7 +240,9 @@ dateFromDateInt di = let (y, m, d) = dateComponentsFromInt (fromDateInt di)
 dateAdd :: DateInt -- ^ DateInt to shift
         -> Int -- ^ Number of days to shift
         -> DateInt -- ^ The new, shifted DateInt. 
-dateAdd _ _ = error "NYI" -- FIXME: Implementation should be fairly easy by converting to Day, shifting, converting back.
+dateAdd date offset = let shifted = Date.addDays (fromIntegral offset) (dateFromDateInt date)
+                      in let (year, month, day) = Date.toGregorian shifted
+                         in getDateInt (day + month * 100 + fromIntegral year * 10000)
 
 -- Some number support.
 
