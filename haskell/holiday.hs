@@ -44,3 +44,4 @@ main = do
   (opts, args) <- parseOptions argv
   putStrLn ("Command line options:" ++ (show opts) ++ "; arguments:" ++ (show args))
   HolidayServer.startHolidayServer (lookup "-f" opts) (lookup "-c" opts) (lookup "-w" opts)
+ 

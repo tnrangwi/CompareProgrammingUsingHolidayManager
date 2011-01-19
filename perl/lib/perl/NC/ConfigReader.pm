@@ -118,8 +118,8 @@ sub readConfigFile($)
 
     #FIXME: What is the correct notation to pass a function pointer without letting Perl guess?
     my %cfg = map(_parseLine, @lines);
-    print "parsed, dump:\n";
-    print %cfg;
+    #print "parsed, dump:\n";
+    #print %cfg;
     #print $cfg{"xyz"};
     print "\n";
     if (wantarray()) {
