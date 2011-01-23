@@ -22,13 +22,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 =cut
 
-=for comment
-
-Error handling is currently incomplete and needs to be fixed before bringing
-this to production.
-
-=cut
-
 =head1 Name
 
 Package NC::ServerSocket. Easy perl server socket connection interface.

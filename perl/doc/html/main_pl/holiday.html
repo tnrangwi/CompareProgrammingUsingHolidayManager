@@ -1,0 +1,239 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>holiday</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#license">License</a></li>
+	<li><a href="#name">Name</a></li>
+	<li><a href="#functions">Functions</a></li>
+	<ul>
+
+		<li><a href="#load__">load()</a></li>
+		<li><a href="#save__">save()</a></li>
+	</ul>
+
+	<li><a href="#interface_specification">Interface specification</a></li>
+	<ul>
+
+		<li><a href="#getu">getu</a></li>
+		<ul>
+
+			<li><a href="#parameters">Parameters</a></li>
+			<li><a href="#return_lines">Return Lines</a></li>
+		</ul>
+
+		<li><a href="#geta">geta</a></li>
+		<li><a href="#addh">addh</a></li>
+		<ul>
+
+			<li><a href="#parameters">Parameters</a></li>
+			<li><a href="#return_lines">Return Lines</a></li>
+		</ul>
+
+		<li><a href="#delh">delh</a></li>
+		<ul>
+
+			<li><a href="#parameters">Parameters</a></li>
+			<li><a href="#return_lines">Return Lines</a></li>
+		</ul>
+
+		<li><a href="#shutdown">shutdown</a></li>
+		<ul>
+
+			<li><a href="#return_lines">Return Lines</a></li>
+		</ul>
+
+		<li><a href="#addu">addu</a></li>
+		<ul>
+
+			<li><a href="#parameters">Parameters</a></li>
+			<li><a href="#return_lines">Return Lines</a></li>
+		</ul>
+
+	</ul>
+
+	<li><a href="#author">Author</a></li>
+	<li><a href="#license">License</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="license">License</a></h1>
+<p>Copyright (c) 2006-2010: Nagler &amp; Company</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the &quot;Software&quot;), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<p>
+</p>
+<hr />
+<h1><a name="name">Name</a></h1>
+<p>This is the holiday server. It provides a generic interface to a holiday calender for
+multiple users. Communication is done via an abstract interface, currently using NC::SocketServer.
+See the man page holiday for further details. Some features regarding production environments
+have been removed, but the code is the same.</p>
+<p>This is the original imlementation. Thanks to Asmus L&ouml;wenhaupt, it had been a pleasure
+to setup this and use it for teaching software development and code versioning with you.</p>
+<p>All the implementations in different languages are derived from this one. Therefore this one
+has least features, does not support command line arguments, etc.</p>
+<p>
+</p>
+<hr />
+<h1><a name="functions">Functions</a></h1>
+<p>
+</p>
+<h2><a name="load__">load()</a></h2>
+<p>Loads currently saved holiday calenders for all users.</p>
+<p>
+</p>
+<h2><a name="save__">save()</a></h2>
+<p>Save currently held holiday calenders for all users</p>
+<p>
+</p>
+<hr />
+<h1><a name="interface_specification">Interface specification</a></h1>
+<p>Currently a socket interface at the port chosen in the config file is used to access the holiday server.
+Communication is done by providing a line in this format:</p>
+<p><code>Command|Arg1|Arg2</code></p>
+<p>terminated with <code>CR LF</code>. Result data sets are provided in the format</p>
+<p><code>Par1|Par2|...</code></p>
+<p>Results vary from zero to many lines of output. See the specification of NC::ServerSocket for technical
+protocol details.</p>
+<p>
+</p>
+<h2><a name="getu">getu</a></h2>
+<p>Returns holiday calender for the given user.</p>
+<p>
+</p>
+<h3><a name="parameters">Parameters</a></h3>
+<ul>
+<li><strong><a name="user_name" class="item">User name.</a></strong>
+
+</li>
+</ul>
+<p>
+</p>
+<h3><a name="return_lines">Return Lines</a></h3>
+<ul>
+<li><strong><a name="year" class="item">Day of year (leading digits), year (trailing 4 digits).</a></strong>
+
+</li>
+<li><strong><a name="number_of_days" class="item">Number of Days.</a></strong>
+
+</li>
+</ul>
+<p>
+</p>
+<h2><a name="geta">geta</a></h2>
+<p>Returns holiday calender for all users. See <code>getu</code> for details. This adds
+a first return parameter containing the user name.</p>
+<p>
+</p>
+<h2><a name="addh">addh</a></h2>
+<p>Add/change holiday for a given user with a given first holiday date.</p>
+<p>
+</p>
+<h3><a name="parameters">Parameters</a></h3>
+<ul>
+<li><strong><a name="user_name2" class="item">User name.</a></strong>
+
+</li>
+<li><strong>Day of year (leading digits), year (trailing 4 digits).</strong>
+
+</li>
+<li><strong><a name="number_of_days" class="item">Number of days.</a></strong>
+
+</li>
+</ul>
+<p>
+</p>
+<h3><a name="return_lines">Return Lines</a></h3>
+<p>Returns one return line containing either an empty string or the error message.</p>
+<p>
+</p>
+<h2><a name="delh">delh</a></h2>
+<p>Delete holiday for a given user with a given first holiday date.</p>
+<p>
+</p>
+<h3><a name="parameters">Parameters</a></h3>
+<ul>
+<li><strong><a name="user_name" class="item">User Name</a></strong>
+
+</li>
+<li><strong>Day of year (leading digits), year (trailing 4 digits).</strong>
+
+</li>
+</ul>
+<p>
+</p>
+<h3><a name="return_lines">Return Lines</a></h3>
+<p>Returns one return line containing either an empty string or the error message.</p>
+<p>
+</p>
+<h2><a name="shutdown">shutdown</a></h2>
+<p>Requests holiday server to terminate, saving all holidays.</p>
+<p>
+</p>
+<h3><a name="return_lines">Return Lines</a></h3>
+<p>Returns one line either containing an error message or <code>Done</code>.</p>
+<p>
+</p>
+<h2><a name="addu">addu</a></h2>
+<p>Add user with the given group to the system. This is only allowed via
+privileged connections.</p>
+<p>
+</p>
+<h3><a name="parameters">Parameters</a></h3>
+<ul>
+<li><strong><a name="user_name3" class="item">User name.</a></strong>
+
+</li>
+<li><strong><a name="group" class="item">Group.</a></strong>
+
+</li>
+</ul>
+<p>
+</p>
+<h3><a name="return_lines">Return Lines</a></h3>
+<p>Returns one return line containing either an empty string or the error message.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">Author</a></h1>
+<p>Thorsten Rangwich (written for Nagler &amp; Company, modified afterwards).</p>
+<p>
+</p>
+<hr />
+<h1><a name="license">License</a></h1>
+<p>See file LICENSE for details.</p>
+
+</body>
+
+</html>

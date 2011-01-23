@@ -1,0 +1,128 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>NC::ConfigReader</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">Name</a></li>
+	<li><a href="#license">License</a></li>
+	<li><a href="#variables">VARIABLES</a></li>
+	<ul>
+
+		<li><a href="#configparsed">configParsed</a></li>
+	</ul>
+
+	<li><a href="#functions">FUNCTIONS</a></li>
+	<ul>
+
+		<li><a href="#_parseline__line__">_parseLine(&lt;line&gt;)</a></li>
+		<li><a href="#readconfigfile__filename__">readConfigFile(&lt;FileName&gt;)</a></li>
+		<li><a href="#getvariables__key__">getVariables([key])</a></li>
+	</ul>
+
+	<li><a href="#author">Author</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="name">Name</a></h1>
+<p>Reimplementation of the ConfigReader package.</p>
+<p>This is a (possibly less efficient) reimplementation of the ConfigReader interface to keep
+some open source code intact.</p>
+<p>This implementation should be enhanced to read the more complex configuration files the Lisp
+and Haskell implementations can handle. Configuration files are &quot;compatible to some degree&quot;.
+This version will just ignore any section names and put anything into the flat hash.</p>
+<p>
+</p>
+<hr />
+<h1><a name="license">License</a></h1>
+<p>Copyright (c): Thorsten Rangwich.</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the &quot;Software&quot;), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<p>
+</p>
+<hr />
+<h1><a name="variables">VARIABLES</a></h1>
+<p>
+</p>
+<h2><a name="configparsed">configParsed</a></h2>
+<p>Indicator if any configuration file was read already. In fact it counts how often
+a configuration was read. If the configuration read was not stored globally but
+returned to the caller (readConfigFile in list context), the counter is not changed.</p>
+<p>
+</p>
+<hr />
+<h1><a name="functions">FUNCTIONS</a></h1>
+<p>
+</p>
+<h2><a name="_parseline__line__">_parseLine(&lt;line&gt;)</a></h2>
+<p>Internal function returning an array of (key, value) of the parsed line or
+an empty array (if line did not fit syntax - which includes comments and
+section names). This is used via map to read in the configuration.</p>
+<p>No prototype here, otherwise map blames about missing parameter.
+The function reads $_ -- I do not know if this really is a parameter
+or is externally set by map.</p>
+<p>
+</p>
+<h2><a name="readconfigfile__filename__">readConfigFile(&lt;FileName&gt;)</a></h2>
+<p>Reads in a Java properties style configuration file. Accepts a string file name
+as input. In list context, returns a hash with the configuration (&quot;properties&quot;).
+This is useful if modules wish to read their own configuration file. It reads
+Windows ini files by ignoring the sections. This of course does not work
+properly.</p>
+<p>Main usage will be to read in a global configuration file. This is done if scalar
+or void context (latter one is not a good idea) is chosen. The result is stored in
+a package variable to be retrieved using getVariables. It returns undef on error
+and 1 in scalar context and the read in hash in list context.</p>
+<p>
+</p>
+<h2><a name="getvariables__key__">getVariables([key])</a></h2>
+<p>If a key is given, the value for the given key is returned (undef if it does not exist).
+If no key is given, the whole has is returned.</p>
+<p>If the hash was not set / read in up to now, undef is returned.</p>
+<p>As parameters are optional, no prototype is defined (or I don't know how to do properly
+without Perl complaining).</p>
+<p>I thought about deriving the result from the value expected from the caller,
+i.e. returning the hash in list context and a variable in scalar context.
+This is not a good idea. What do we do in scalar context when no parameter
+is passed and what do we do in functions usually expecting list context
+(like print) where obviuosly not the whole hash is meant and a parameter
+is passed to get the particular value. This would make the interface too
+complex for the caller.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">Author</a></h1>
+<p>Thorsten Rangwich</p>
+
+</body>
+
+</html>

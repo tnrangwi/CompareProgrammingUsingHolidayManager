@@ -31,12 +31,6 @@ use NC::Log qw(logInit logPrint);
 use NC::ServerSocket;
 use NC::ConfigReader;
 
-=for comment
-
-Error handling is incomplete and needs to be finished befor bringing this to production.
-
-=cut
-
 my %htable = ();
 
 $htable{'gast'} = { group => 'N' , times => { 12005 => 6, 3202005 => 2 } } ;

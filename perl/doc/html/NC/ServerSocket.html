@@ -1,0 +1,195 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>NC::ServerSocket</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#license">License</a></li>
+	<li><a href="#name">Name</a></li>
+	<li><a href="#methods">Methods</a></li>
+	<ul>
+
+		<li><a href="#new_________">new($ ; \%);</a></li>
+		<ul>
+
+			<li><a href="#return_value">Return Value</a></li>
+			<li><a href="#parameters_">Parameters:</a></li>
+		</ul>
+
+		<li><a href="#waitconnection__">waitConnection()</a></li>
+		<ul>
+
+			<li><a href="#return_value">Return Value</a></li>
+		</ul>
+
+		<li><a href="#printline___">printLine($)</a></li>
+		<ul>
+
+			<li><a href="#parameters">Parameters</a></li>
+			<li><a href="#return_value">Return Value</a></li>
+		</ul>
+
+		<li><a href="#closeconnection__">closeConnection()</a></li>
+		<ul>
+
+			<li><a href="#return_value">Return Value</a></li>
+		</ul>
+
+		<li><a href="#isprivileged__">isPrivileged()</a></li>
+		<ul>
+
+			<li><a href="#return_value">Return Value</a></li>
+		</ul>
+
+		<li><a href="#destroy">DESTROY</a></li>
+	</ul>
+
+	<li><a href="#protocol_specification">Protocol Specification</a></li>
+	<li><a href="#author">Author</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<h1><a name="license">License</a></h1>
+<p>Copyright (c) 2006-2010: Nagler &amp; Company</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the &quot;Software&quot;), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<p>
+</p>
+<hr />
+<h1><a name="name">Name</a></h1>
+<p>Package NC::ServerSocket. Easy perl server socket connection interface.
+Only usefull in single-threaded, non forked applications.
+NC::ServerSocket provides a connection object that can be used to wait
+for incoming connections and provides methods to send respones to
+the client.</p>
+<p>
+</p>
+<hr />
+<h1><a name="methods">Methods</a></h1>
+<p>
+</p>
+<h2><a name="new_________">new($ ; \%);</a></h2>
+<p>Initialises socket connection.</p>
+<p>
+</p>
+<h3><a name="return_value">Return Value</a></h3>
+<p>ServerSocket Object.</p>
+<p>
+</p>
+<h3><a name="parameters_">Parameters:</a></h3>
+<dl>
+<dt><strong><a name="port_number_to_open_socket" class="item"><em> </em>
+$ Port number to open socket.</a></strong></dt>
+
+<dt><strong><a name="hash" class="item"><em> </em>
+% Optional config hash (reserved for future extensions).</a></strong></dt>
+
+</dl>
+<p>
+</p>
+<h2><a name="waitconnection__">waitConnection()</a></h2>
+<p>Waits for next connect, returns the line and sets status to server answer.
+Only one line must be provided (and only one line will be returned).
+<code>printLine()</code> can be used after that to send response data,
+<code>closeConnection()</code> to close connection.</p>
+<p>
+</p>
+<h3><a name="return_value">Return Value</a></h3>
+<p>Line sent by client or undef if connection was terminated.</p>
+<p>
+</p>
+<h2><a name="printline___">printLine($)</a></h2>
+<p>Prints one result line back to the client. Carriage Return and NewLine will be appended
+automatically and must not be included (no check done currently).
+Empty lines are converted to lines terminated with Carriage Return and NewLine, empty string
+is converted to one 0 character (as specified in protocol document).</p>
+<p>
+</p>
+<h3><a name="parameters">Parameters</a></h3>
+<dl>
+<dt><strong><a name="line_to_return_to_client" class="item"><em> </em>
+$ Line to return to client.</a></strong></dt>
+
+</dl>
+<p>
+</p>
+<h3><a name="return_value">Return Value</a></h3>
+<p>Return value from client write or undef on error.</p>
+<p>
+</p>
+<h2><a name="closeconnection__">closeConnection()</a></h2>
+<p>Closes current socket connection associated to ServerSocket object.</p>
+<p>
+</p>
+<h3><a name="return_value">Return Value</a></h3>
+<p>Undef or 1 on error, otherwise 0.</p>
+<p>
+</p>
+<h2><a name="isprivileged__">isPrivileged()</a></h2>
+<p>Returns privileged status of current connection.</p>
+<p>
+</p>
+<h3><a name="return_value">Return Value</a></h3>
+<p>undef on no connection / error, 0 on non privileged, 1 on privileged connections.</p>
+<p>
+</p>
+<h2><a name="destroy">DESTROY</a></h2>
+<p>Destructor to do cleanups.</p>
+<p>
+</p>
+<hr />
+<h1><a name="protocol_specification">Protocol Specification</a></h1>
+<p>A very simple socket protocol is used. Only one line of command input is supported
+and must be terminated by <code>CR LF</code>. No other <code>LF</code> must occur in input. More
+<code>CR</code>'s will work, but are not recommended, though. This is read by
+<em>waitConnection</em>.</p>
+<p>Result lines are almost freely defined. Every data set to be returned to the
+client must not contain any <code>CR LF</code> sequence. It will be terminated by
+the <em>printLine()</em> function by <code>CR LF</code> and appear this way at client side.
+Empty data sets (empty strings) will be converted to a single 0-Byte character,
+the data set terminated by <code>CR LF</code> as usual.</p>
+<p>To terminate a connection use <em>closeConnection()</em>. This will send a final
+<code>CR LF</code> to the client and close the connection afterwards. The client can check
+for complete data transfer, because a transfer containing nothing consists of
+<code>CR LF</code> only and all other transfers end in <code>CR LF CR LF</code>.</p>
+<p>Raw access functions may be implemented on the SocketServer object in the future
+to get around limitations like no <code>CR LF</code> may be included or to support binary
+data transfers.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">Author</a></h1>
+<p>Thorsten Rangwich, Nagler &amp; Company.</p>
+
+</body>
+
+</html>
