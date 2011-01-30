@@ -306,5 +306,7 @@ data transfers.
 
 Thorsten Rangwich, Nagler & Company.
 
+based on examples provided by Asmus LE<ouml>wenhaupt, Nagler & Company.
+
 =cut
 
