@@ -181,10 +181,10 @@ startHolidayServer cFile cDir wDir = do
 
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault
-  -- FIXME: Use foldl to add the complete list
-  let funcReg = SocketServer.pushHandler Map.empty "getu" (SocketServer.SyncLess _getAllUsers)
+  let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers))]
+          where step m (n, f) = SocketServer.pushHandler m n f
   -- Start socket server, process requests. Errors on a single request have to be caught.
   SocketServer.serveSocketUntilShutdown funcReg state socket
-  -- Garbage received over the network must not crash the server.
+  -- FIXME: Garbage received over the network must not crash the server.
 
   return ()

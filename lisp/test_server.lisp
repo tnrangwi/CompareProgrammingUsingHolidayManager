@@ -4,6 +4,7 @@
 ; This tests the socket server. One function is pushed to
 ; the server and then the server is run.
 
+; FIXME: There should be a require here instead. Test with sbcl how to get this solved in this prototype.
 (load "basetools.lisp")
 (load "socket-service.lisp")
 (defvar *server* (make-instance 'socket-service:socket-server :privileged-addresses '("127.0.0.1") :bindaddr "127.0.0.1" :port 1971))
