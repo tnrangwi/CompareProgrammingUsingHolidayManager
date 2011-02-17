@@ -151,6 +151,38 @@ _getAllUsers state _ _ = (
                           []
                          )
 
+-- | Add one user to the list of users. Non IO function.
+_addUser :: BaseTools.Dictionary -- ^ Status input
+         -> Bool -- ^ If access via privileged connection. Does not work when not set to true.
+         -> [String] -- ^ Parameter list input. The name of the single user to add. May accept more than one later.
+         -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
+-- The colon looks a bit strange at my first sight. Every x has to be packaged in a list by map. Instead of \x->[x]
+-- it is natural to use \x->x`:`[], which is (: []) applied to x. The infix operator given with a second argument
+-- returns a function. The only remaining argument then is the first argument. Currying in the 1st argument.
+-- Never have seen that up to now... hlint knows better. ((:) []) x gives an error and would expect ((:) x) [].
+_addUser state priv (newu:group:[]) = if priv
+                                      then
+                                          let users = BaseTools.get . head $ (Map.!) state "user" :: BaseTools.Dictionary
+                                          in
+                                            if Map.member newu users 
+                                            then
+                                                error "user already exists, not added"
+                                            else
+                                                let updated = Map.insert newu (packageUsr $ UsrSettings group []) users
+                                                in
+                                                  (
+                                                   Map.insert "user" [(BaseTools.CfDict updated)] state, --update state with new user dict
+                                                   [], -- no result
+                                                   [[newu]]) -- tell postprocessing to create the corresponding file
+                                      else
+                                          error "addu only works over a privileged connection"
+
+-- | IO part of this function. This one has to create a new user file.
+_addUserIo :: [[String]] -- ^ List of one user added to the list of users
+           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the new user.
+           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
+_addUserIo (user:[]) state = error "IO part of save user not yet implemented"
+_addUserIo _ _ = error "Internal error, no user or more than one user to save in addu"
 
 -- | Function starting holiday server, running until shutdown received via network
 startHolidayServer :: Maybe String -- ^ Config file name without path, defaults to "holiday.conf"
@@ -181,7 +213,8 @@ startHolidayServer cFile cDir wDir = do
 
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault
-  let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers))]
+  let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
+                                      ("addu", (SocketServer.Syncing _addUser _addUserIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
   -- Start socket server, process requests. Errors on a single request have to be caught.
   SocketServer.serveSocketUntilShutdown funcReg state socket
