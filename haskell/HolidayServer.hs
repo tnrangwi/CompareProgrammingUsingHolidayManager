@@ -131,6 +131,24 @@ extractIO :: (x, IO y) -> IO (x, y)
 -- | Remember for any Monad m: (>>=)  :: m a' -> (a' -> m b') -> m b'
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
+-- Helper functions to surfe through the state dictionary
+
+-- | Retrieve dictionary containing all the users. This is mainly for further processing
+_extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
+                  -> BaseTools.Dictionary -- ^ The dictionary with the user data
+_extractPackagedUsers state = BaseTools.get . head $ (Map.!) state "user"
+
+_extractUser :: BaseTools.Dictionary -- ^ The network dictionary containing all users
+             -> String -- ^ The name of the user
+             -> Maybe UsrSettings -- ^ The extracted user settings
+_extractUser users name =
+    case Map.lookup name users of
+      Just (BaseTools.CfDict userDict : []) -> Just $
+                                                 UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
+                                                   []
+      Nothing -> Nothing
+      _ -> error "Invalid user packaging (internal error)"
+
 -- Network functions
 
 -- | Return the list of all users registered in the "Holiday" system.
@@ -144,10 +162,7 @@ _getAllUsers :: BaseTools.Dictionary -- ^ Status input
 -- Never have seen that up to now... hlint knows better. ((:) []) x gives an error and would expect ((:) x) [].
 _getAllUsers state _ _ = ( 
                           state,
-                          map (: []) $
-                              Map.keys (
-                                        BaseTools.get . head $ (Map.!) state "user" :: BaseTools.Dictionary
-                                       ), -- ghc needs a bit help here - does not derive the needed type properly
+                          map (: []) $ Map.keys (_extractPackagedUsers state),
                           []
                          )
 
@@ -162,7 +177,7 @@ _addUser :: BaseTools.Dictionary -- ^ Status input
 -- Never have seen that up to now... hlint knows better. ((:) []) x gives an error and would expect ((:) x) [].
 _addUser state priv (newu:group:[]) = if priv
                                       then
-                                          let users = BaseTools.get . head $ (Map.!) state "user" :: BaseTools.Dictionary
+                                          let users = _extractPackagedUsers state
                                           in
                                             if Map.member newu users 
                                             then
