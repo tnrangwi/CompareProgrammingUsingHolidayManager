@@ -135,7 +135,7 @@ extractIO (a, b) = let f r = return (a, r) in b >>= f
 
 -- | Retrieve dictionary containing all the users. This is mainly for further processing
 _extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
-                  -> BaseTools.Dictionary -- ^ The dictionary with the user data
+                      -> BaseTools.Dictionary -- ^ The dictionary with the user data
 _extractPackagedUsers state = BaseTools.get . head $ (Map.!) state "user"
 
 _extractUser :: BaseTools.Dictionary -- ^ The network dictionary containing all users
@@ -144,8 +144,12 @@ _extractUser :: BaseTools.Dictionary -- ^ The network dictionary containing all 
 _extractUser users name =
     case Map.lookup name users of
       Just (BaseTools.CfDict userDict : []) -> Just $
-                                                 UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
-                                                   []
+                                               UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
+                                                           (map eHol (zip (map BaseTools.get $ (Map.!) userDict "start")
+                                                                      (map BaseTools.get $ (Map.!) userDict "length")))
+                                                               where eHol (s, l) = Holiday (gd s) (gp l)
+                                                                     gd = BaseTools.getDateInt
+                                                                     gp = BaseTools.getPositiveInt
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
 
