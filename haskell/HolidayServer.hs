@@ -138,6 +138,7 @@ _extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
                       -> BaseTools.Dictionary -- ^ The dictionary with the user data
 _extractPackagedUsers state = BaseTools.get . head $ (Map.!) state "user"
 
+-- | Extract single user from nested dictionary into proper UsrSettings structure. Does not check contents.
 _extractUser :: BaseTools.Dictionary -- ^ The network dictionary containing all users
              -> String -- ^ The name of the user
              -> Maybe UsrSettings -- ^ The extracted user settings
@@ -145,11 +146,11 @@ _extractUser users name =
     case Map.lookup name users of
       Just (BaseTools.CfDict userDict : []) -> Just $
                                                UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
-                                                           (map eHol (zip (map BaseTools.get $ (Map.!) userDict "start")
-                                                                      (map BaseTools.get $ (Map.!) userDict "length")))
-                                                               where eHol (s, l) = Holiday (gd s) (gp l)
-                                                                     gd = BaseTools.getDateInt
-                                                                     gp = BaseTools.getPositiveInt
+                                                           (map extractHoliday (zip ((Map.!) userDict "start")
+                                                                                ((Map.!) userDict "length")))
+                                                               where extractHoliday (s, l) = Holiday (gDate s) (gLength l)
+                                                                     gDate = BaseTools.getDateInt . BaseTools.get
+                                                                     gLength = BaseTools.getPositiveInt . BaseTools.get
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
 
