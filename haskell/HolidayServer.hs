@@ -133,16 +133,22 @@ extractIO (a, b) = let f r = return (a, r) in b >>= f
 
 -- Helper functions to surfe through the state dictionary
 
+-- | Extract one of this configuration items only there once in the configuration
+_extractVariable :: BaseTools.Dictionary
+                 -> String
+                 -> BaseTools.ConfigItem
+_extractVariable key state = head $ (Map.!) key state
+
 -- | Retrieve dictionary containing all the users. This is mainly for further processing
 _extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
                       -> BaseTools.Dictionary -- ^ The dictionary with the user data
-_extractPackagedUsers state = BaseTools.get . head $ (Map.!) state "user"
+_extractPackagedUsers = BaseTools.get . (`_extractVariable` "user")
 
 -- | Extract single user from nested dictionary into proper UsrSettings structure. Does not check contents.
-_extractUser :: BaseTools.Dictionary -- ^ The network dictionary containing all users
+_extractUsr :: BaseTools.Dictionary -- ^ The network dictionary containing all users
              -> String -- ^ The name of the user
              -> Maybe UsrSettings -- ^ The extracted user settings
-_extractUser users name =
+_extractUsr users name =
     case Map.lookup name users of
       Just (BaseTools.CfDict userDict : []) -> Just $
                                                UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
@@ -153,6 +159,17 @@ _extractUser users name =
                                                                      gLength = BaseTools.getPositiveInt . BaseTools.get
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
+
+-- Helper functions having IO effects
+
+
+-- | Save a user's configuration in the file system
+_saveUsr :: UsrSettings -- ^ The configuration of the user
+         -> String -- ^ The name of the user to save it
+         -> String -- ^ The directory to store the data
+         -> IO ()
+_saveUsr usr name dir = error "Save user not yet implemented"
+
 
 -- Network functions
 
@@ -201,7 +218,14 @@ _addUser state priv (newu:group:[]) = if priv
 _addUserIo :: [[String]] -- ^ List of one user added to the list of users
            -> BaseTools.Dictionary -- ^ State dictionary, there we will find the new user.
            -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_addUserIo (user:[]) state = error "IO part of save user not yet implemented"
+_addUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
+                                 in case uSetgs of
+                                      Just settings -> _saveUsr 
+                                                       settings 
+                                                       usr (BaseTools.get (_extractVariable state "workdir"))
+                                      otherwise -> error "Internal error: User not in state dictionary"
+                                 
+                                 
 _addUserIo _ _ = error "Internal error, no user or more than one user to save in addu"
 
 -- | Function starting holiday server, running until shutdown received via network
