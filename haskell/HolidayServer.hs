@@ -271,7 +271,7 @@ startHolidayServer cFile cDir wDir = do
   let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict packageableDataDict])]
 
   -- Setup socket connection, map network functions. This may fail as well.
-  let socket = SocketServer.connectionDefault
+  let socket = SocketServer.connectionDefault { SocketServer.privileged = privileged }
   let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
                                       ("addu", (SocketServer.Syncing _addUser _addUserIo))]
           where step m (n, f) = SocketServer.pushHandler m n f

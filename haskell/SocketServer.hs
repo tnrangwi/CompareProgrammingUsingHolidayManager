@@ -36,7 +36,7 @@ module SocketServer
  -- ** Argument type declarations
  SocketFunction(..),
  FunctionRegistry,
- ConnectionArguments,
+ ConnectionArguments(..),
  -- ** Default separator
  separator,
  -- ** Charactor marking really empty lines
