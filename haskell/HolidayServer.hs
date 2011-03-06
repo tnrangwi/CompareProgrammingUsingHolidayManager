@@ -15,7 +15,8 @@ import qualified BaseTools
 import qualified SocketServer
 import qualified Data.Map as Map
 import qualified Data.Maybe as MayBe
-import System.FilePath ((</>), addExtension)
+import System.FilePath ((</>))
+import qualified System.FilePath as FilePath
 import qualified System.IO.Error as IOError
 import qualified System.IO as FileIO
 import qualified System.Directory as SysDir
@@ -24,15 +25,16 @@ import qualified Control.Monad as MControl
 
 -- | File extension for files containing user holidays.
 usrExtension :: String
-usrExtension = "usr"
+usrExtension = ".usr"
+
+-- | File extension for temporary files.
+tmpExtension :: String
+tmpExtension = ".tmp"
 
 -- | Separator used for the configuraton files.
 fieldSeparator :: Char
 fieldSeparator = '|'
 
--- | File suffix including dot for files containing user holidays
-usrFileSuffix :: String
-usrFileSuffix = '.' : usrExtension
 
 -- | Data type used to express a list of user holidays. FIXME: How to express this in a safe data type? How
 -- | is a data constructor restricted to a range of values? The second value only has tp be > 0, the
@@ -62,9 +64,9 @@ data UsrSettings = UsrSettings {
 
 
 -- | Read file containing settings for one single user.
-readUsrFile :: String -- ^ File name.
+readUsrFile :: String -- ^ File name without extension
             -> IO UsrSettings -- ^ User's settings. See type definition for details.
-readUsrFile = MControl.liftM (readUsrFromList . lines) . FileIO.readFile
+readUsrFile = MControl.liftM (readUsrFromList . lines) . FileIO.readFile . (`FilePath.addExtension` usrExtension)
 
 
 -- | Read user configuration file from a list of lines consisting of the file's contents.
@@ -80,7 +82,7 @@ createHolidayFromString s = let splitted =  BaseTools.splitBy fieldSeparator s
                             in case length splitted of
                                  2 -> Holiday
                                       (BaseTools.getDateIntFromDayOfYearInt . read . head $ splitted)
-                                      (read $ splitted!!1)
+                                      (BaseTools.getPositiveInt . read $ (splitted!!2))
                                  otherwise -> error $ "Invalid string representation of holiday:" ++ s
 
 
@@ -103,9 +105,8 @@ readUsrHolidays xs = foldr step [] xs
 usrNameListFromFileList :: [String] -- ^ List of file names to match
                         -> [String] -- ^ Returns list with user names
 usrNameListFromFileList xs = foldr step [] xs
-    where step x ys | drop (l x) x == usrFileSuffix = take (l x) x : ys
+    where step x ys | (FilePath.takeExtension x) == usrExtension = (FilePath.dropExtension x) : ys
                     | otherwise = ys
-              where  l x = length x - length usrFileSuffix 
 
 -- | Package a single user's settings into general structure suitable for SocketServer. All values must be
 -- | lists of ConfigItem. A (hierarchical) dirctionary has string keys and always lists of
@@ -163,12 +164,24 @@ _extractUsr users name =
 -- Helper functions having IO effects
 
 
--- | Save a user's configuration in the file system
+-- | Save a user's configuration in the file system.
+-- | FIXME: Does not handle IO errors and closes the file properly.
 _saveUsr :: UsrSettings -- ^ The configuration of the user
          -> String -- ^ The name of the user to save it
          -> String -- ^ The directory to store the data
          -> IO ()
-_saveUsr usr name dir = error "Save user not yet implemented"
+_saveUsr usr name dir = do
+  let tmpFile = dir </> (FilePath.addExtension name tmpExtension)
+  --fd <- FileIO.openFile tmpFile
+  --FileIO.hPutStrLn fd (usrGroup usr)
+  --let
+  --    w h = FileIO.hPutStrLn fd (show (firstOfHoliday h)) ++ fieldSeparator ++ (show (lengthOfHoliday h))
+  --in
+  --    mapM w (holidayList user)
+  --FileIO.hClose fd
+  SysDir.renameFile tmpFile (FilePath.replaceExtension tmpFile usrExtension)
+
+ 
 
 
 -- Network functions
@@ -246,8 +259,10 @@ startHolidayServer cFile cDir wDir = do
 
 
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
-  usrNamesFromFiles <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
-  usrData <- MControl.liftM Map.fromList (MControl.sequence (map (\x -> extractIO (x, readUsrFile (x ++ usrFileSuffix))) usrNamesFromFiles))
+  usrNames <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
+  usrData <- MControl.liftM
+             Map.fromList $
+             MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNames)
   -- This is sufficient, but cannot be transferred via the socket server. Only fixed data types, no arbitrary
   -- data types.
   -- We build a BaseTools.Dictionary from that now. Dynamic would be a better idea. SocketServer has to be changed for that.

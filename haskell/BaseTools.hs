@@ -186,7 +186,9 @@ mergeWith s (x:xs) = x ++ s : mergeWith s xs
 -- | Data type to receive a valid date coded in an integer in human readable form, like 19751025 for 25.10.1975.
 -- | Constructor is not published, only unsafe function to create it.
 data DateInt = CreateDateInt Int -- ^ Create type from unchecked integer.
-               deriving (Show, Read, Eq, Ord)
+               deriving (Eq, Ord)
+instance Show DateInt
+    where show = show . fromDateInt
 
 -- | There should be a function in Haskell already. Returns True, if the year is a leap year.
 isLeapYear :: Int -- ^ Year to check
@@ -232,7 +234,16 @@ getDateIntFromDayOfYearInt d = let year = fromIntegral $ d `mod` 10000
                                in let (_, month, day) = Date.toGregorian . Date.addDays (dInYear-1) $
                                                         Date.fromGregorian year 1 1
                                   in getDateInt (fromIntegral year * 10000 + month * 100 + day)
-                                                           
+
+-- | Create unusual format: 12005 from 01.01.2005
+getDateOfYearIntFromDateInt :: DateInt
+                            -> Int
+getDateOfYearIntFromDateInt di =
+    let
+        d = dateFromDateInt di
+    in
+      let (j,m,t) = Date.toGregorian d
+      in (fromIntegral (Date.diffDays d (Date.fromGregorian j 1 1))) * 10000 + (fromIntegral j)
 
 -- | Function to extract Int in which the date is stored from a DateInt. This
 -- | is needed only for internal usage. No need to export this.
@@ -259,7 +270,11 @@ dateAdd date offset = let shifted = Date.addDays (fromIntegral offset) (dateFrom
 
 -- | Positive integer, constructor is not exported.
 data PositiveInt = CreatePositiveInt Int
-                   deriving (Show, Read, Eq, Ord)
+                   deriving (Eq, Ord)
+instance Show PositiveInt
+    where show = show . fromPositiveInt
+
+--getPositiveInt . (read :: Int)
 
 -- | Create a positive integer. Unsecure function, raises error if input is not strictly positive.
 getPositiveInt :: Int -- ^ Input number, nust be a positive integer
