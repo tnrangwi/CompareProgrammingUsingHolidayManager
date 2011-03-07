@@ -165,23 +165,19 @@ _extractUsr users name =
 
 
 -- | Save a user's configuration in the file system.
--- | FIXME: Does not handle IO errors and closes the file properly.
+-- | FIXME: Does not handle IO errors. Close has to be done in any case, rename only on success.
 _saveUsr :: UsrSettings -- ^ The configuration of the user
          -> String -- ^ The name of the user to save it
          -> String -- ^ The directory to store the data
          -> IO ()
 _saveUsr usr name dir = do
   let tmpFile = dir </> (FilePath.addExtension name tmpExtension)
-  --fd <- FileIO.openFile tmpFile
-  --FileIO.hPutStrLn fd (usrGroup usr)
-  --let
-  --    w h = FileIO.hPutStrLn fd (show (firstOfHoliday h)) ++ fieldSeparator ++ (show (lengthOfHoliday h))
-  --in
-  --    mapM w (holidayList user)
-  --FileIO.hClose fd
+  fd <- FileIO.openFile tmpFile FileIO.WriteMode
+  FileIO.hPutStrLn fd (usrGroup usr)
+  let w h = FileIO.hPutStrLn fd $ (show (firstOfHoliday h)) ++ [fieldSeparator] ++ (show (lengthOfHoliday h))
+    in mapM w (holidayList usr)
+  FileIO.hClose fd
   SysDir.renameFile tmpFile (FilePath.replaceExtension tmpFile usrExtension)
-
- 
 
 
 -- Network functions
@@ -235,7 +231,8 @@ _addUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUser
                                  in case uSetgs of
                                       Just settings -> _saveUsr 
                                                        settings 
-                                                       usr (BaseTools.get (_extractVariable state "workdir"))
+                                                       usr
+                                                       (BaseTools.get (_extractVariable state "workdir"))
                                       otherwise -> error "Internal error: User not in state dictionary"
                                  
                                  
@@ -256,13 +253,13 @@ startHolidayServer cFile cDir wDir = do
   print ("Config:" ++ show config)
   -- Wow! BaseTools.get extracts the values from CfItem. Inheritance and type system does the rest.
   let privileged = map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)) :: [String]
-
+  let portName = show (BaseTools.get . head $ (Map.!) (BaseTools.get config) "port" :: Int)
 
   -- Read in all users stored by the holiday system and their settings. Will fail on I/O or parse error.
   usrNames <- MControl.liftM usrNameListFromFileList (SysDir.getDirectoryContents workDir)
   usrData <- MControl.liftM
              Map.fromList $
-             MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNames)
+                MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNames)
   -- This is sufficient, but cannot be transferred via the socket server. Only fixed data types, no arbitrary
   -- data types.
   -- We build a BaseTools.Dictionary from that now. Dynamic would be a better idea. SocketServer has to be changed for that.
@@ -271,7 +268,7 @@ startHolidayServer cFile cDir wDir = do
   let state = Map.fromList [("workdir", [BaseTools.CfString workDir]), ("user", [BaseTools.CfDict packageableDataDict])]
 
   -- Setup socket connection, map network functions. This may fail as well.
-  let socket = SocketServer.connectionDefault
+  let socket = SocketServer.connectionDefault  { SocketServer.privileged = privileged, SocketServer.portName = portName }
   let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
                                       ("addu", (SocketServer.Syncing _addUser _addUserIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
