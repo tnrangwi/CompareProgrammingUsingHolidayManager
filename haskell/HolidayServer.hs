@@ -105,7 +105,7 @@ readUsrHolidays xs = foldr step [] xs
 usrNameListFromFileList :: [String] -- ^ List of file names to match
                         -> [String] -- ^ Returns list with user names
 usrNameListFromFileList xs = foldr step [] xs
-    where step x ys | (FilePath.takeExtension x) == usrExtension = (FilePath.dropExtension x) : ys
+    where step x ys | FilePath.takeExtension x == usrExtension = FilePath.dropExtension x : ys
                     | otherwise = ys
 
 -- | Package a single user's settings into general structure suitable for SocketServer. All values must be
@@ -138,7 +138,7 @@ extractIO (a, b) = let f r = return (a, r) in b >>= f
 _extractVariable :: BaseTools.Dictionary
                  -> String
                  -> BaseTools.ConfigItem
-_extractVariable key state = head $ (Map.!) key state
+_extractVariable state = head . (Map.!) state
 
 -- | Retrieve dictionary containing all the users. This is mainly for further processing
 _extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
@@ -171,10 +171,10 @@ _saveUsr :: UsrSettings -- ^ The configuration of the user
          -> String -- ^ The directory to store the data
          -> IO ()
 _saveUsr usr name dir = do
-  let tmpFile = dir </> (FilePath.addExtension name tmpExtension)
+  let tmpFile = dir </> FilePath.addExtension name tmpExtension
   fd <- FileIO.openFile tmpFile FileIO.WriteMode
   FileIO.hPutStrLn fd (usrGroup usr)
-  let w h = FileIO.hPutStrLn fd $ (show (firstOfHoliday h)) ++ [fieldSeparator] ++ (show (lengthOfHoliday h))
+  let w h = FileIO.hPutStrLn fd $ show (firstOfHoliday h) ++ [fieldSeparator] ++ show (lengthOfHoliday h)
     in mapM w (holidayList usr)
   FileIO.hClose fd
   SysDir.renameFile tmpFile (FilePath.replaceExtension tmpFile usrExtension)

@@ -30,13 +30,15 @@ module SocketServer
  -- * Type declarations for puclic API
  HandlerFunc,
  SyncFunc,
- -- * Default arguments
+ -- * API interface
+ -- ** Initialisation arguments
+ ConnectionArguments(..),
+ -- **Default arguments
  connectionDefault,
  -- * Implementation API (you will not need that)
  -- ** Argument type declarations
  SocketFunction(..),
  FunctionRegistry,
- ConnectionArguments(..),
  -- ** Default separator
  separator,
  -- ** Charactor marking really empty lines
@@ -87,15 +89,14 @@ type HandlerFunc = BaseTools.Dictionary -> Bool -> [String] -> (BaseTools.Dictio
 type ShutdownFunc = BaseTools.Dictionary -> Bool -> [String] -> ([[String]], [[String]], Bool)
 
 -- | Prototype of network function doing file synchrisations if necessary. Takes this arguments:
--- 
--- * State dictionary
--- 
--- * Update commands
--- | Prototype of network function doing file synchrisations if necessary. Takes this arguments:
--- 
--- * Update commands
--- 
--- * State dictionary
+-- |
+-- | * State dictionary
+-- |
+-- | * Update commands
+-- |
+-- | * Update commands
+-- |
+-- | * State dictionary
 type SyncFunc = [[String]] -> BaseTools.Dictionary -> IO ()
 
 -- | Socket function type. Either a pure function or a pair of a pure function and a non pure function.
@@ -115,10 +116,22 @@ data ConnectionArguments  = ConnectionArguments {
       privileged :: [String] -- ^ List of privileged addresses
     } deriving Show
 
--- | Internal type to return a function for synchronisation and what's to be done by that function
+-- | Internal type to return a function for synchronisation and the data that function will need.
+-- | The data is in a format the pure function would return. The function is packaged together with
+-- | the pure function given on service initialisation.
 data SyncingPair = SyncingPair SyncFunc [[String]]
                  | NoSync
+
+-- | Extract contents from syncing pair. One could define defaults for NoSync, but
+-- | this really is not needed.
+syncData :: SyncingPair -- ^ Package of function and data
+         -> [[String]] -- ^ The data
 syncData (SyncingPair _ d) = d
+
+-- | Extract function from the syncing pair. One could as well define a default here for NoSync,
+-- | but we really do not need it currently.
+syncFunc :: SyncingPair -- ^ Package of function and data
+         -> SyncFunc -- ^ The function
 syncFunc (SyncingPair f _) = f
 
 -- | Default arguments. Use record syntax to update with your settings.
