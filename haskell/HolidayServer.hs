@@ -132,6 +132,20 @@ extractIO :: (x, IO y) -> IO (x, y)
 -- | Remember for any Monad m: (>>=)  :: m a' -> (a' -> m b') -> m b'
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
+-- | Small function converting a string into a DateInt. This throws a nicer error than the standard read would do.
+_stringToDate :: String -> BaseTools.DateInt
+_stringToDate s = case readsPrec 1 s of
+                    (i, []):[] -> BaseTools.getDateInt i
+                    otherwise -> error "No date int value received via network"
+
+-- | Small function converting a string into a PositiveInt. This throws a nicer error than the standard read would do.
+_stringToPositiveInt :: String -> BaseTools.PositiveInt
+_stringToPositiveInt s = case readsPrec 1 s of
+                           (i, []):[] -> BaseTools.getPositiveInt i
+                           otherwise -> error "No positive int value received via network"
+
+
+
 -- Helper functions to surfe through the state dictionary
 
 -- | Extract one of this configuration items only there once in the configuration
@@ -160,6 +174,13 @@ _extractUsr users name =
                                                                      gLength = BaseTools.getPositiveInt . BaseTools.get
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
+
+-- | Helper function to add one holiday to the list
+_addHol :: [Holiday] -- ^ Input holidays definition
+        -> BaseTools.DateInt -- ^ Start date of the new holiday
+        -> BaseTools.PositiveInt -- ^ Length of this new holiday
+        -> [Holiday] -- ^ Modified holidays definition
+_addHol = error "NYI"
 
 -- Helper functions having IO effects
 
@@ -191,15 +212,16 @@ _getAllUsers :: BaseTools.Dictionary -- ^ Status input
 -- it is natural to use \x->x`:`[], which is (: []) applied to x. The infix operator given with a second argument
 -- returns a function. The only remaining argument then is the first argument. Currying in the 1st argument.
 -- Never have seen that up to now... hlint knows better. ((:) []) x gives an error and would expect ((:) x) [].
-_getAllUsers state _ _ = ( 
+_getAllUsers state _ _ = (
                           state,
                           map (: []) $ Map.keys (_extractPackagedUsers state),
                           []
                          )
 
 -- | Add one user to the list of users. Non IO function.
+
 _addUser :: BaseTools.Dictionary -- ^ Status input
-         -> Bool -- ^ If access via privileged connection. Does not work when not set to true.
+         -> Bool -- ^ If access via privileged connection. Does only work when not set to true.
          -> [String] -- ^ Parameter list input. The name of the single user to add. May accept more than one later.
          -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
 -- The colon looks a bit strange at my first sight. Every x has to be packaged in a list by map. Instead of \x->[x]
@@ -223,20 +245,45 @@ _addUser state priv (newu:group:[]) = if priv
                                       else
                                           error "addu only works over a privileged connection"
 
--- | IO part of this function. This one has to create a new user file.
-_addUserIo :: [[String]] -- ^ List of one user added to the list of users
-           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the new user.
+-- | IO part of some network functions. Saves a particular user.
+_saveUserIo :: [[String]] -- ^ List of one user added or modified in the list of users
+           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
            -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_addUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
-                                 in case uSetgs of
-                                      Just settings -> _saveUsr 
-                                                       settings 
-                                                       usr
-                                                       (BaseTools.get (_extractVariable state "workdir"))
-                                      otherwise -> error "Internal error: User not in state dictionary"
+_saveUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
+                                  in case uSetgs of
+                                       Just settings -> _saveUsr 
+                                                        settings 
+                                                        usr
+                                                        (BaseTools.get (_extractVariable state "workdir"))
+                                       otherwise -> error "Internal error: User not in state dictionary"
                                  
-                                 
-_addUserIo _ _ = error "Internal error, no user or more than one user to save in addu"
+_saveUserIo _ _ = error "Internal error, no user or more than one users to save"
+
+
+-- | Add holiday for user - non IO part
+_addHoliday :: BaseTools.Dictionary -- ^ Status input
+            -> Bool -- ^ If access via privileged connection. Not queried.
+            -> [String] -- ^ Parameter list input. The name, start date and duration.
+            -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
+_addHoliday state _ (name:starth:lengthh:[]) =
+    let users = _extractPackagedUsers state
+        uSetgs = _extractUsr users name
+        start = _stringToDate starth
+        length = _stringToPositiveInt lengthh
+    in case uSetgs of
+         Just settings -> let changedSettings = settings { holidayList = _addHol (holidayList settings) start length }
+                              updatedUsers = Map.insert name (packageUsr changedSettings) users
+                          in 
+                            (
+                             Map.insert "user" [(BaseTools.CfDict updatedUsers)] state,
+                             [],
+                             [[name]])
+         otherwise -> error $ "User " ++ name ++ " does not exist - add holiday failed"
+
+
+_addHoliday _ _ _ = error "Invalid parameters for add holiday"
+
+
 
 -- | Function starting holiday server, running until shutdown received via network
 startHolidayServer :: Maybe String -- ^ Config file name without path, defaults to "holiday.conf"
@@ -270,7 +317,8 @@ startHolidayServer cFile cDir wDir = do
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault  { SocketServer.privileged = privileged, SocketServer.portName = portName }
   let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
-                                      ("addu", (SocketServer.Syncing _addUser _addUserIo))]
+                                      ("addu", (SocketServer.Syncing _addUser _saveUserIo)),
+                                      ("addh", (SocketServer.Syncing _addHoliday _saveUserIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
   -- Start socket server, process requests. Errors on a single request have to be caught.
   SocketServer.serveSocketUntilShutdown funcReg state socket
