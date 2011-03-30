@@ -180,37 +180,37 @@ _checkOverlap :: Holiday -- ^ Sorted: 1st holiday
               -> Holiday -- ^ Second holiday
               -> Bool -- ^ True or False
 _checkOverlap (Holiday s l) (Holiday s' l') =
-    (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
+    BaseTools.dateAdd s (BaseTools.fromPositiveInt l) >= s'
 
 -- | Helper function to add one holiday to the list
 _addHol :: [Holiday] -- ^ Input holidays definition
         -> Holiday -- ^ Holiday to insert
         -> [Holiday] -- ^ Modified holidays definition
-_addHol [] h = h:[]
+_addHol [] h = [h]
 _addHol (h'@(Holiday s' l'):h''@(Holiday s'' l''):xs) h@(Holiday s l)
-    | s'' <= s =  h':(_addHol (h'':xs) h)
-    | s' <= s && s'' >= s = if (_checkOverlap h' h) || (_checkOverlap h h'')
+    | s'' <= s =  h':_addHol (h'':xs) h
+    | s' <= s && s'' >= s = if _checkOverlap h' h || _checkOverlap h h''
                             then
                                 error "Overlapping holidays"
                             else
                                 h':h:h'':xs
-    | s < s' = if (_checkOverlap h h')
+    | s < s' = if _checkOverlap h h'
                then
                    error "Overlapping holidays"
                else
                    h:h':h'':xs
 
 _addHol (h'@(Holiday s' l'):[]) h@(Holiday s l)
-    | s <= s' = if (_checkOverlap h h')
+    | s <= s' = if _checkOverlap h h'
                 then
                     error "Overlapping holidays"
                 else
-                    h:h':[]
-    | otherwise = if (_checkOverlap h' h)
+                    [h, h']
+    | otherwise = if _checkOverlap h' h
                   then
                       error "Overlapping holidays"
                   else
-                      h':h:[]
+                      [h', h]
 
 -- Helper functions having IO effects
 
