@@ -180,7 +180,33 @@ _addHol :: [Holiday] -- ^ Input holidays definition
         -> BaseTools.DateInt -- ^ Start date of the new holiday
         -> BaseTools.PositiveInt -- ^ Length of this new holiday
         -> [Holiday] -- ^ Modified holidays definition
-_addHol = error "NYI"
+_addHol [] s l = (Holiday s l):[]
+_addHol (h'@(Holiday s' l'):h''@(Holiday s'' l''):xs) s l | s'' <= s =
+                                                              h':(_addHol (h'':xs) s l)
+                                                          | s' <= s && s'' >= s =
+                                                              if (BaseTools.dateAdd s' (BaseTools.fromPositiveInt l')) >= s || (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s''
+                                                              then
+                                                                  error "Overlapping holidays"
+                                                              else
+                                                                  h':(Holiday s l):h'':xs
+                                                          | s < s' =
+                                                              if (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
+                                                              then
+                                                                  error "Overlapping holidays"
+                                                              else
+                                                                  (Holiday s l):h':h'':xs
+
+_addHol (h'@(Holiday s' l'):[]) s l | s <= s' = if (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
+                                                then
+                                                    error "Overlapping holidays"
+                                                else
+                                                    (Holiday s l):h':[]
+                                    | otherwise =
+                                        if (BaseTools.dateAdd s' (BaseTools.fromPositiveInt l')) >= s
+                                        then
+                                            error "Overlapping holidays"
+                                        else
+                                            h':(Holiday s l):[]
 
 -- Helper functions having IO effects
 
