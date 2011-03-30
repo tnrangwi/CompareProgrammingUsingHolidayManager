@@ -175,38 +175,42 @@ _extractUsr users name =
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
 
+-- | Helper function to check two holidays for overlaps
+_checkOverlap :: Holiday -- ^ Sorted: 1st holiday
+              -> Holiday -- ^ Second holiday
+              -> Bool -- ^ True or False
+_checkOverlap (Holiday s l) (Holiday s' l') =
+    (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
+
 -- | Helper function to add one holiday to the list
 _addHol :: [Holiday] -- ^ Input holidays definition
-        -> BaseTools.DateInt -- ^ Start date of the new holiday
-        -> BaseTools.PositiveInt -- ^ Length of this new holiday
+        -> Holiday -- ^ Holiday to insert
         -> [Holiday] -- ^ Modified holidays definition
-_addHol [] s l = (Holiday s l):[]
-_addHol (h'@(Holiday s' l'):h''@(Holiday s'' l''):xs) s l | s'' <= s =
-                                                              h':(_addHol (h'':xs) s l)
-                                                          | s' <= s && s'' >= s =
-                                                              if (BaseTools.dateAdd s' (BaseTools.fromPositiveInt l')) >= s || (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s''
-                                                              then
-                                                                  error "Overlapping holidays"
-                                                              else
-                                                                  h':(Holiday s l):h'':xs
-                                                          | s < s' =
-                                                              if (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
-                                                              then
-                                                                  error "Overlapping holidays"
-                                                              else
-                                                                  (Holiday s l):h':h'':xs
+_addHol [] h = h:[]
+_addHol (h'@(Holiday s' l'):h''@(Holiday s'' l''):xs) h@(Holiday s l)
+    | s'' <= s =  h':(_addHol (h'':xs) h)
+    | s' <= s && s'' >= s = if (_checkOverlap h' h) || (_checkOverlap h h'')
+                            then
+                                error "Overlapping holidays"
+                            else
+                                h':h:h'':xs
+    | s < s' = if (_checkOverlap h h')
+               then
+                   error "Overlapping holidays"
+               else
+                   h:h':h'':xs
 
-_addHol (h'@(Holiday s' l'):[]) s l | s <= s' = if (BaseTools.dateAdd s (BaseTools.fromPositiveInt l)) >= s'
-                                                then
-                                                    error "Overlapping holidays"
-                                                else
-                                                    (Holiday s l):h':[]
-                                    | otherwise =
-                                        if (BaseTools.dateAdd s' (BaseTools.fromPositiveInt l')) >= s
-                                        then
-                                            error "Overlapping holidays"
-                                        else
-                                            h':(Holiday s l):[]
+_addHol (h'@(Holiday s' l'):[]) h@(Holiday s l)
+    | s <= s' = if (_checkOverlap h h')
+                then
+                    error "Overlapping holidays"
+                else
+                    h:h':[]
+    | otherwise = if (_checkOverlap h' h)
+                  then
+                      error "Overlapping holidays"
+                  else
+                      h':h:[]
 
 -- Helper functions having IO effects
 
@@ -296,8 +300,9 @@ _addHoliday state _ (name:starth:lengthh:[]) =
         uSetgs = _extractUsr users name
         start = _stringToDate starth
         length = _stringToPositiveInt lengthh
+        hol = Holiday start length
     in case uSetgs of
-         Just settings -> let changedSettings = settings { holidayList = _addHol (holidayList settings) start length }
+         Just settings -> let changedSettings = settings { holidayList = _addHol (holidayList settings) hol }
                               updatedUsers = Map.insert name (packageUsr changedSettings) users
                           in 
                             (
