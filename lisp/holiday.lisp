@@ -26,8 +26,7 @@ The server communication would provide its own separator.")
 ;; Helper functions, not exported
 
 (defun add-user-holiday (user-hash user start days &key work-dir (file-sync T))
-  "Add a new holiday for a user. Sync file when ready or rollback on error if file-sync is T.
-ToDo: Extract search somewhere else, could be used in the delete function as well. "
+  "Add a new holiday for a user. Sync file when ready or rollback on error if file-sync is T."
 					; Insert part from read-single-user-config here to insert a single holiday
   (if (or (>= 0 days) (>= 10000000 start)) (error 'socket-function-error :msg "Invalid start date or duration"))
   (let (previous next user-htable sync-args

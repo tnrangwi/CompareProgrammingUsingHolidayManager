@@ -22,6 +22,7 @@ import qualified System.IO as FileIO
 import qualified System.Directory as SysDir
 import qualified Control.Monad as MControl
 
+import Debug.Trace (trace)
 
 -- | File extension for files containing user holidays.
 usrExtension :: String
@@ -61,6 +62,7 @@ data UsrSettings = UsrSettings {
       usrGroup :: UsrGroup, -- ^ group of this user
       holidayList :: [Holiday] -- ^ list of holidays of this user
     }
+                   deriving Show
 
 
 -- | Read file containing settings for one single user.
@@ -180,7 +182,7 @@ _checkOverlap :: Holiday -- ^ Sorted: 1st holiday
               -> Holiday -- ^ Second holiday
               -> Bool -- ^ True or False
 _checkOverlap (Holiday s l) (Holiday s' l') =
-    BaseTools.dateAdd s (BaseTools.fromPositiveInt l) >= s'
+    BaseTools.dateAdd s (BaseTools.fromPositiveInt l) > s'
 
 -- | Helper function to add one holiday to the list
 _addHol :: [Holiday] -- ^ Input holidays definition
@@ -233,6 +235,13 @@ _saveUsr usr name dir = do
 
 -- Network functions
 
+-- | Dummy function, for debugging purposes. Non IO part.
+_debug :: BaseTools.Dictionary -- ^ Status input
+       -> Bool -- ^ connection is privileged
+       -> [String] -- ^ Parameter list input
+       -> (BaseTools.Dictionary, [[String]], [[String]]) -- ^ State, result, modification list
+_debug state priv args = error $ (show (Map.keys state)) ++ (show ((Map.!) state "user"))
+
 -- | Return the list of all users registered in the "Holiday" system.
 _getAllUsers :: BaseTools.Dictionary -- ^ Status input
              -> Bool -- ^ If access via privileged connection
@@ -275,7 +284,16 @@ _addUser state priv (newu:group:[]) = if priv
                                       else
                                           error "addu only works over a privileged connection"
 
--- | IO part of some network functions. Saves a particular user.
+-- | IO part of some network functions.
+
+-- | Dummy function - IO part - for debugging purposes
+_debugIo :: [[String]] -- ^ Input commands
+           -> BaseTools.Dictionary -- ^ State
+           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
+_debugIo  = error "Debug IO not yet implemented"
+
+
+-- | Saves a particular user.
 _saveUserIo :: [[String]] -- ^ List of one user added or modified in the list of users
            -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
            -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
@@ -349,7 +367,8 @@ startHolidayServer cFile cDir wDir = do
   let socket = SocketServer.connectionDefault  { SocketServer.privileged = privileged, SocketServer.portName = portName }
   let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
                                       ("addu", (SocketServer.Syncing _addUser _saveUserIo)),
-                                      ("addh", (SocketServer.Syncing _addHoliday _saveUserIo))]
+                                      ("addh", (SocketServer.Syncing _addHoliday _saveUserIo)),
+                                      ("dbg", (SocketServer.Syncing _debug _debugIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
   -- Start socket server, process requests. Errors on a single request have to be caught.
   SocketServer.serveSocketUntilShutdown funcReg state socket
