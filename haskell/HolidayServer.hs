@@ -84,7 +84,7 @@ createHolidayFromString s = let splitted =  BaseTools.splitBy fieldSeparator s
                             in case length splitted of
                                  2 -> Holiday
                                       (BaseTools.getDateIntFromDayOfYearInt . read . head $ splitted)
-                                      (BaseTools.getPositiveInt . read $ (splitted!!2))
+                                      (BaseTools.getPositiveInt . read $ (splitted!!1))
                                  otherwise -> error $ "Invalid string representation of holiday:" ++ s
 
 
@@ -347,7 +347,7 @@ startHolidayServer cFile cDir wDir = do
   print ("Read config file:" ++ configFileName ++ ".")
   config <- MControl.liftM (head . (\x->(Map.!) x "global")) (BaseTools.readConfigFile configFileName)
   print ("Config:" ++ show config)
-  -- Wow! BaseTools.get extracts the values from CfItem. Inheritance and type system does the rest.
+
   let privileged = map BaseTools.get (MayBe.fromMaybe [] $ Map.lookup "privileged" (BaseTools.get config)) :: [String]
   let portName = show (BaseTools.get . head $ (Map.!) (BaseTools.get config) "port" :: Int)
 
