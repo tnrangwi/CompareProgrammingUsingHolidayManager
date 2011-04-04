@@ -22,7 +22,7 @@ import qualified System.IO as FileIO
 import qualified System.Directory as SysDir
 import qualified Control.Monad as MControl
 
-import Debug.Trace (trace)
+--import Debug.Trace (trace)
 
 -- | File extension for files containing user holidays.
 usrExtension :: String
@@ -361,7 +361,7 @@ startHolidayServer cFile cDir wDir = do
              Map.fromList $
                 MControl.sequence (map (\x -> extractIO (x, readUsrFile x)) usrNames)
   -- This is sufficient, but cannot be transferred via the socket server. Only fixed data types, no arbitrary
-  -- data types.
+  -- data types. Dynamic should be used in the socket server instead.
   -- We build a BaseTools.Dictionary from that now. Dynamic would be a better idea. SocketServer has to be changed for that.
   let packageableDataDict = Map.map packageUsr usrData
 
@@ -369,10 +369,11 @@ startHolidayServer cFile cDir wDir = do
 
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault  { SocketServer.privileged = privileged, SocketServer.portName = portName }
-  let funcReg = foldl step Map.empty [("getu", (SocketServer.SyncLess _getAllUsers)),
+                                     --Missing: getu (get user holiday), delh, geta, delu, sync (?)
+  let funcReg = foldl step Map.empty [("getl", (SocketServer.SyncLess _getAllUsers)),
                                       ("addu", (SocketServer.Syncing _addUser _saveUserIo)),
                                       ("addh", (SocketServer.Syncing _addHoliday _saveUserIo)),
-                                      ("dbg", (SocketServer.Syncing _debug _debugIo))]
+                                      (".dbg", (SocketServer.Syncing _debug _debugIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
   -- Start socket server, process requests. Errors on a single request have to be caught.
   SocketServer.serveSocketUntilShutdown funcReg state socket
