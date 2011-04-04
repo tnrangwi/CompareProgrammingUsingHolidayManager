@@ -135,10 +135,14 @@ extractIO :: (x, IO y) -> IO (x, y)
 extractIO (a, b) = let f r = return (a, r) in b >>= f
 
 -- | Small function converting a string into a DateInt. This throws a nicer error than the standard read would do.
+-- | It both converts a DateInt compatible integer and a day of year integer.
 _stringToDate :: String -> BaseTools.DateInt
 _stringToDate s = case readsPrec 1 s of
-                    (i, []):[] -> BaseTools.getDateInt i
-                    otherwise -> error "No date int value received via network"
+                    (i, []):[] -> if i >= 10000000 then -- DateInt format has exactly 8 digits, dayofyear 5-7 digits
+                                      BaseTools.getDateInt i
+                                  else
+                                      BaseTools.getDateIntFromDayOfYearInt i
+                    otherwise -> error $ "No date int value received via network:" ++ s
 
 -- | Small function converting a string into a PositiveInt. This throws a nicer error than the standard read would do.
 _stringToPositiveInt :: String -> BaseTools.PositiveInt
