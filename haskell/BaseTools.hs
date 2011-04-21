@@ -130,6 +130,8 @@ _readConfig (x:xs) dic =
          _ -> _readConfig xs (_addConfigValue strippedLine dic)
 
 -- | Take a list of config file lines and parse them into cfg dict.
+-- | A strict function would be nice. I did not do up to now, seq would
+-- | have to be carried out further down, it's no one liner.
 readConfigList :: [String] -> Dictionary
 readConfigList a = _readConfig a Map.empty
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-} -- Needed to catch exceptions properly
 -- | Author: Thorsten Rangwich
 -- | See file LICENSE for details on using this code.
 -- | This module contains a TCP/IP socket server that executes functions
@@ -53,6 +54,7 @@ import qualified System.IO as SysIO
 import qualified Data.String.Utils as StringUtils
 import qualified Data.Map as Map
 import qualified BaseTools
+import qualified Control.Exception as Exception
 
 -- | Separator used by network functions. Only a native client will need that. 
 -- Better use an integrated client from here (not yet implemented).
@@ -188,35 +190,50 @@ _serveSocketRequest :: Socket.Socket -- ^ Bound socket
                    -> BaseTools.Dictionary -- ^ Current state.
                    -> [Socket.HostAddress] -- ^ List of privileged addresses
                    -> IO ()
-_serveSocketRequest sock registry storage privilegedAddresses = do
-  (conn, addr) <- Socket.accept sock
-  let addrPart = _getAddressPart addr
-  let privileged = addrPart `elem` privilegedAddresses
-  print $ "Incoming connection:" ++ show addr ++ ", privileged:" ++ show privileged
-  hdl <- Socket.socketToHandle conn SysIO.ReadWriteMode
-  SysIO.hSetBuffering hdl SysIO.LineBuffering
-  line <- SysIO.hGetLine hdl
-  let strippedLine = BaseTools.splitBy separator $ take (length line - 1 ) line -- strip trailing \r, break into pieces
-  let command = head strippedLine
-  let arguments = drop 1 strippedLine
-  print $ "Got command:" ++ command ++ ", args:" ++ show arguments
-  let (newMem, dbg, res, sync, sdown) = case Map.lookup command registry of
-                                          Nothing -> (storage
-                                                     , Just $ "Function " ++ command ++ " not mapped, ignored"
-                                                     , []
-                                                     , NoSync
-                                                     , command=="shutdown")
-                                          Just func -> let (s,m,r,sy,f) = _servePureCall func arguments storage privileged
-                                                       in (s, m, r, sy, f)
-  case dbg of
-    Just message -> print message
-    Nothing -> return ()
-  case sync of
-    NoSync -> return ()
-    _ -> syncFunc sync (syncData sync) newMem
-  _writeOutput hdl res
-  SysIO.hClose hdl
-  if sdown then print "Shutdown request received." else _serveSocketRequest sock registry newMem privilegedAddresses
+_serveSocketRequest sock registry storage privilegedAddresses =
+  -- (error "xyz") `catches` [Handler (\ (e :: ErrorCall) -> print e)]
+  -- catch (using catches, but this maybe what Prelude.catch does): 
+                           -- IOException
+                           -- NoMethodError (if using Dynamic?)
+                           -- PatternMatchFail
+                           -- ErrorCall
+  -- catch most errors and print them
+  -- (mem, shutdown, caught) <- catch _handleSocketRequest (\e -> return (storage, False, (show e)))
+  let handleRequest = do
+        (conn, addr) <- Socket.accept sock
+        let addrPart = _getAddressPart addr
+        let privileged = addrPart `elem` privilegedAddresses
+        print $ "Incoming connection:" ++ show addr ++ ", privileged:" ++ show privileged
+        hdl <- Socket.socketToHandle conn SysIO.ReadWriteMode
+        SysIO.hSetBuffering hdl SysIO.LineBuffering
+        line <- SysIO.hGetLine hdl
+        let strippedLine = BaseTools.splitBy separator $ take (length line - 1 ) line -- strip trailing \r, break into pieces
+        let command = head strippedLine
+        let arguments = drop 1 strippedLine
+        print $ "Got command:" ++ command ++ ", args:" ++ show arguments
+        let (newMem, dbg, res, sync, sdown) = case Map.lookup command registry of
+                                                Nothing -> (storage
+                                                           , Just $ "Function " ++ command ++ " not mapped, ignored"
+                                                           , []
+                                                           , NoSync
+                                                           , command=="shutdown")
+                                                Just func -> let (s,m,r,sy,f) = _servePureCall func arguments storage privileged
+                                                             in (s, m, r, sy, f)
+        case dbg of
+          Just message -> print message
+          Nothing -> return ()
+        case sync of
+          NoSync -> return ()
+          _ -> syncFunc sync (syncData sync) newMem
+        _writeOutput hdl res
+        SysIO.hClose hdl
+        return (newMem, sdown) 
+  in do 
+    (mem, shutdown) <- catch handleRequest (\e -> 
+                                                print ("Error in socket function:" ++ show e) >> 
+                                                      return (storage, False))
+    if shutdown then print "Shutdown request received." else _serveSocketRequest sock registry mem privilegedAddresses
+
 
 -- | Internal function. Press one pure network function request
 _servePureCall :: SocketFunction -- ^ Socket function to execute
