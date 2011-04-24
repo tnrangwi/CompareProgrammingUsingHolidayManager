@@ -199,7 +199,8 @@ _serveSocketRequest sock registry storage privilegedAddresses =
                            -- ErrorCall
   -- catch most errors and print them
   -- (mem, shutdown, caught) <- catch _handleSocketRequest (\e -> return (storage, False, (show e)))
-  let handleRequest = do
+  let handleError e = print ("Error in socket function:" ++ show e) >> return (storage, False)
+      handleRequest = do
         (conn, addr) <- Socket.accept sock
         let addrPart = _getAddressPart addr
         let privileged = addrPart `elem` privilegedAddresses
@@ -228,10 +229,11 @@ _serveSocketRequest sock registry storage privilegedAddresses =
         _writeOutput hdl res
         SysIO.hClose hdl
         return (newMem, sdown) 
-  in do 
-    (mem, shutdown) <- catch handleRequest (\e -> 
-                                                print ("Error in socket function:" ++ show e) >> 
-                                                      return (storage, False))
+  in do
+    -- [Handler (\ (e :: ErrorCall) -> print e)]
+    (mem, shutdown) <- Exception.catches handleRequest [
+                        Exception.Handler (\ (e :: Exception.ErrorCall) -> handleError e),
+                        Exception.Handler (\ (e :: Exception.IOException) -> handleError e)]
     if shutdown then print "Shutdown request received." else _serveSocketRequest sock registry mem privilegedAddresses
 
 
