@@ -191,14 +191,11 @@ _serveSocketRequest :: Socket.Socket -- ^ Bound socket
                    -> [Socket.HostAddress] -- ^ List of privileged addresses
                    -> IO ()
 _serveSocketRequest sock registry storage privilegedAddresses =
-  -- (error "xyz") `catches` [Handler (\ (e :: ErrorCall) -> print e)]
   -- catch (using catches, but this maybe what Prelude.catch does): 
                            -- IOException
                            -- NoMethodError (if using Dynamic?)
                            -- PatternMatchFail
                            -- ErrorCall
-  -- catch most errors and print them
-  -- (mem, shutdown, caught) <- catch _handleSocketRequest (\e -> return (storage, False, (show e)))
   let handleError e = print ("Error in socket function:" ++ show e) >> return (storage, False)
       handleRequest = do
         (conn, addr) <- Socket.accept sock
@@ -208,7 +205,7 @@ _serveSocketRequest sock registry storage privilegedAddresses =
         hdl <- Socket.socketToHandle conn SysIO.ReadWriteMode
         SysIO.hSetBuffering hdl SysIO.LineBuffering
         line <- SysIO.hGetLine hdl
-        let strippedLine = BaseTools.splitBy separator $ take (length line - 1 ) line -- strip trailing \r, break into pieces
+        let strippedLine = BaseTools.splitBy separator $ take (length line - 1 ) line
         let command = head strippedLine
         let arguments = drop 1 strippedLine
         print $ "Got command:" ++ command ++ ", args:" ++ show arguments
@@ -218,8 +215,7 @@ _serveSocketRequest sock registry storage privilegedAddresses =
                                                            , []
                                                            , NoSync
                                                            , command=="shutdown")
-                                                Just func -> let (s,m,r,sy,f) = _servePureCall func arguments storage privileged
-                                                             in (s, m, r, sy, f)
+                                                Just func -> _servePureCall func arguments storage privileged
         case dbg of
           Just message -> print message
           Nothing -> return ()
@@ -237,7 +233,7 @@ _serveSocketRequest sock registry storage privilegedAddresses =
     if shutdown then print "Shutdown request received." else _serveSocketRequest sock registry mem privilegedAddresses
 
 
--- | Internal function. Press one pure network function request
+-- | Internal function. Process one pure network function request
 _servePureCall :: SocketFunction -- ^ Socket function to execute
                -> [String] -- ^ Arguments for socket function
                -> BaseTools.Dictionary -- ^ State dictionary

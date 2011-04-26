@@ -244,7 +244,7 @@ _debug :: BaseTools.Dictionary -- ^ Status input
        -> Bool -- ^ connection is privileged
        -> [String] -- ^ Parameter list input
        -> (BaseTools.Dictionary, [[String]], [[String]]) -- ^ State, result, modification list
-_debug state priv args = error $ (show (Map.keys state)) -- ++ (show ((Map.!) state "user"))
+_debug state priv args = error $ show (Map.keys state)
 
 -- | Return the list of all users registered in the "Holiday" system.
 _getAllUsers :: BaseTools.Dictionary -- ^ Status input
@@ -294,7 +294,7 @@ _addUser state priv (newu:group:[]) = if priv
 _debugIo :: [[String]] -- ^ Input commands
            -> BaseTools.Dictionary -- ^ State
            -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_debugIo  args state = error $ "Debug IO not yet implemented" ++ (head (head args))
+_debugIo  args state = error $ "Debug IO not yet implemented" ++ head (head args)
 
 
 -- | Saves a particular user.
