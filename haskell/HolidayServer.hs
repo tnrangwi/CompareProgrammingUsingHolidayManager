@@ -9,7 +9,7 @@ module HolidayServer
 )
 where
 
--- FIXME: We have to evaluate the structures after reading in and starting up the holiday server.
+
 
 import qualified BaseTools
 import qualified SocketServer
@@ -218,6 +218,18 @@ _addHol (h'@(Holiday s' l'):[]) h@(Holiday s l)
                   else
                       [h', h]
 
+-- | Helper function to delete one holiday from the list.
+_delHol :: [Holiday] -- ^ Input holidays definition
+        -> Holiday -- ^ Holiday to delete
+        -> [Holiday] -- ^ Modified holidays definition
+-- Probably not very efficiently implemented. Tail recursion disabled,
+-- whole lists are searched.
+-- OK as lists are short enough.
+_delHol xs h = let traverse [] s = error $ "Holiday does not exist starting at:" ++ show s
+                   traverse (h'@(Holiday s' l'):xs) s | s == s' = xs
+                                                      | otherwise = (h':traverse xs s)
+               in traverse xs $ firstOfHoliday h
+
 -- Helper functions having IO effects
 
 
@@ -237,7 +249,7 @@ _saveUsr usr name dir = do
   SysDir.renameFile tmpFile (FilePath.replaceExtension tmpFile usrExtension)
 
 
--- Network functions
+-- Network functions - non IO parts
 
 -- | Dummy function, for debugging purposes. Non IO part.
 _debug :: BaseTools.Dictionary -- ^ Status input
@@ -288,28 +300,30 @@ _addUser state priv (newu:group:[]) = if priv
                                       else
                                           error "addu only works over a privileged connection"
 
--- | IO part of some network functions.
+-- | Delete one user from the list of users. Non IO function.
 
--- | Dummy function - IO part - for debugging purposes
-_debugIo :: [[String]] -- ^ Input commands
-           -> BaseTools.Dictionary -- ^ State
-           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_debugIo  args state = error $ "Debug IO not yet implemented" ++ head (head args)
+_delUser :: BaseTools.Dictionary -- ^ Status input
+         -> Bool -- ^ If access via privileged connection. Does only work when not set to true.
+         -> [String] -- ^ Parameter list input. The name of the single user to remove.
+         -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
+_delUser state priv (u:[]) = if priv
+                             then
+                                 let users = _extractPackagedUsers state
+                                 in
+                                   if Map.notMember u users 
+                                   then
+                                       error "user does not exists, not deleted"
+                                   else
+                                       let updated = Map.delete u users
+                                       in
+                                         (
+                                          Map.insert "user" [(BaseTools.CfDict updated)] state, --update state with new user dict
+                                          [], -- no result
+                                          [[u]]) -- tell postprocessing to remove the corresponding file
+                             else
+                                 error "delu only works over a privileged connection"
 
 
--- | Saves a particular user.
-_saveUserIo :: [[String]] -- ^ List of one user added or modified in the list of users
-           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
-           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_saveUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
-                                  in case uSetgs of
-                                       Just settings -> _saveUsr 
-                                                        settings 
-                                                        usr
-                                                        (BaseTools.get (_extractVariable state "workdir"))
-                                       otherwise -> error "Internal error: User not in state dictionary"
-                                 
-_saveUserIo _ _ = error "Internal error, no user or more than one users to save"
 
 
 -- | Add holiday for user - non IO part
@@ -335,6 +349,63 @@ _addHoliday state _ (name:starth:lengthh:[]) =
 
 
 _addHoliday _ _ _ = error "Invalid parameters for add holiday"
+
+-- | Delete holiday for user - non IO part
+_delHoliday :: BaseTools.Dictionary -- ^ Status input
+            -> Bool -- ^ If access via privileged connection. Not queried.
+            -> [String] -- ^ Parameter list input. The name, start date and duration.
+            -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
+_delHoliday state _ (name:starth:[]) =
+    let users = _extractPackagedUsers state
+        uSetgs = _extractUsr users name
+        start = _stringToDate starth
+        hol = Holiday start undefined -- length not needed, so no dummy value used
+    in case uSetgs of
+         Just settings -> let changedSettings = settings { holidayList = _delHol (holidayList settings) hol }
+                              updatedUsers = Map.insert name (packageUsr changedSettings) users
+                          in
+                            (
+                             Map.insert "user" [(BaseTools.CfDict updatedUsers)] state,
+                             [],
+                             [[name]])
+         otherwise -> error $ "User " ++ name ++ " does not exist - add holiday failed"
+
+
+_delHoliday _ _ _ = error "Invalid parameters for delete holiday"
+
+
+-- IO part of some network functions.
+
+-- | Dummy function - IO part - for debugging purposes
+_debugIo :: [[String]] -- ^ Input commands
+           -> BaseTools.Dictionary -- ^ State
+           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
+_debugIo  args state = error $ "Debug IO not yet implemented" ++ head (head args)
+
+
+-- | Saves a particular user.
+_saveUserIo :: [[String]] -- ^ List of one user added or modified in the list of users
+           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
+           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
+_saveUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
+                                  in case uSetgs of
+                                       Just settings -> _saveUsr 
+                                                        settings 
+                                                        usr
+                                                        (BaseTools.get (_extractVariable state "workdir"))
+                                       otherwise -> error "Internal error: User not in state dictionary"
+                                 
+_saveUserIo _ _ = error "Internal error, no user or more than one users to save"
+
+
+-- | Removes the data of a particular user from the file system.
+_delUserIo :: [[String]] -- ^ List of one user to be removed from the list of users
+           -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
+           -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
+_delUserIo ((usr:[]):[]) state = 
+    SysDir.removeFile $
+     BaseTools.get (_extractVariable state "workdir") </> FilePath.addExtension usr usrExtension
+
 
 
 
@@ -369,14 +440,21 @@ startHolidayServer cFile cDir wDir = do
 
   -- Setup socket connection, map network functions. This may fail as well.
   let socket = SocketServer.connectionDefault  { SocketServer.privileged = privileged, SocketServer.portName = portName }
-                                     --Missing: getu (get user holiday), delh, geta, delu, sync (?)
+                                     --Missing: getu (get user holiday), delh, geta, delu, sync
   let funcReg = foldl step Map.empty [("getl", (SocketServer.SyncLess _getAllUsers)),
                                       ("addu", (SocketServer.Syncing _addUser _saveUserIo)),
+                                      ("delu", (SocketServer.Syncing _delUser _delUserIo)),
                                       ("addh", (SocketServer.Syncing _addHoliday _saveUserIo)),
+                                      ("delh", (SocketServer.Syncing _delHoliday _saveUserIo)),
+                                      -- ("getu", (SocketServer.SyncLess _getUserHolidays)), -- missing
+                                      -- ("geta", (SocketServer.SyncLess _getAllHolidays)), -- missing
+                                      -- ("sync", (SocketServer.Syncing _syncDB _syncDBIo)), -- missing
+                                      -- ("shutdown", (SocketServer.ShutdownFunc SyncFunc _sync4shutdown _syncDBIo)), -- missing
                                       (".dbg", (SocketServer.Syncing _debug _debugIo))]
           where step m (n, f) = SocketServer.pushHandler m n f
-  -- Start socket server, process requests. Errors on a single request have to be caught.
+  -- Start socket server, process requests.
+  -- Errors are caught in SocketServer (I/O error and calls to $ error).
+  -- This is a bit lazy and could be done better.
   SocketServer.serveSocketUntilShutdown funcReg state socket
-  -- FIXME: Garbage received over the network must not crash the server.
 
   return ()
