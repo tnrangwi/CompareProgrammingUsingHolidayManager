@@ -9,7 +9,8 @@ module HolidayServer
 )
 where
 
-
+-- FIXME: delh / addh and delu / addu are quite similar· Reduce!
+-- FIXME: why does syncless socket function return commands for sync function?
 
 import qualified BaseTools
 import qualified SocketServer
@@ -373,6 +374,22 @@ _delHoliday state _ (name:starth:[]) =
 
 _delHoliday _ _ _ = error "Invalid parameters for delete holiday"
 
+-- | get user holidays
+_getUserHolidays :: BaseTools.Dictionary -- ^ Status input
+                 -> Bool -- ^ If access via privileged connection. Not queried.
+                 -> [String] -- ^ Parameter list input: the name of the user.
+                 -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, result, empty list
+_getUserHolidays state _ (name:[]) =
+    let uSetgs = _extractUsr (_extractPackagedUsers state) name
+    in
+      case uSetgs of
+        Just settings ->
+            (
+             state,
+             map (\(Holiday s l) -> [show s, show l]) (holidayList settings),
+             [])
+        otherwise -> error $ "User " ++ name ++ " does not exist - get user holidays failed"
+_getUserHolidays _ _ _ = error "Invalid parameters for _getUserHolidays"
 
 -- IO part of some network functions.
 
@@ -446,7 +463,7 @@ startHolidayServer cFile cDir wDir = do
                                       ("delu", (SocketServer.Syncing _delUser _delUserIo)),
                                       ("addh", (SocketServer.Syncing _addHoliday _saveUserIo)),
                                       ("delh", (SocketServer.Syncing _delHoliday _saveUserIo)),
-                                      -- ("getu", (SocketServer.SyncLess _getUserHolidays)), -- missing
+                                      ("getu", (SocketServer.SyncLess _getUserHolidays)),
                                       -- ("geta", (SocketServer.SyncLess _getAllHolidays)), -- missing
                                       -- ("sync", (SocketServer.Syncing _syncDB _syncDBIo)), -- missing
                                       -- ("shutdown", (SocketServer.ShutdownFunc SyncFunc _sync4shutdown _syncDBIo)), -- missing
