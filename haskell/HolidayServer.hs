@@ -166,21 +166,26 @@ _extractPackagedUsers :: BaseTools.Dictionary -- ^ The state dictionary
                       -> BaseTools.Dictionary -- ^ The dictionary with the user data
 _extractPackagedUsers = BaseTools.get . (`_extractVariable` "user")
 
--- | Extract single user from nested dictionary into proper UsrSettings structure. Does not check contents.
-_extractUsr :: BaseTools.Dictionary -- ^ The network dictionary containing all users
-             -> String -- ^ The name of the user
-             -> Maybe UsrSettings -- ^ The extracted user settings
-_extractUsr users name =
+-- |
+_extractUsr :: BaseTools.Dictionary -- ^ The network dictionary containing the single user's data
+            -> UsrSettings -- ^ The extracted user settings
+_extractUsr userDict = UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
+                                   (map extractHoliday (zip ((Map.!) userDict "start") ((Map.!) userDict "length")))
+                                       where extractHoliday (s, l) = Holiday (gDate s) (gLength l)
+                                             gDate = BaseTools.getDateInt . BaseTools.get
+                                             gLength = BaseTools.getPositiveInt . BaseTools.get
+
+-- |  Extract single user from nested dictionary into proper UsrSettings structure. Does not check contents.
+_getUsr :: BaseTools.Dictionary -- ^ The network dictionary containing all users
+        -> String -- ^ The name of the user
+        -> Maybe UsrSettings -- ^ The extracted user settings
+_getUsr users name =
     case Map.lookup name users of
-      Just (BaseTools.CfDict userDict : []) -> Just $
-                                               UsrSettings (BaseTools.get . head $ (Map.!) userDict "group")
-                                                           (map extractHoliday (zip ((Map.!) userDict "start")
-                                                                                ((Map.!) userDict "length")))
-                                                               where extractHoliday (s, l) = Holiday (gDate s) (gLength l)
-                                                                     gDate = BaseTools.getDateInt . BaseTools.get
-                                                                     gLength = BaseTools.getPositiveInt . BaseTools.get
+      Just (BaseTools.CfDict userDict : []) -> Just $ _extractUsr userDict
       Nothing -> Nothing
       _ -> error "Invalid user packaging (internal error)"
+
+
 
 -- | Helper function to check two holidays for overlaps
 _checkOverlap :: Holiday -- ^ Sorted: 1st holiday
@@ -334,7 +339,7 @@ _addHoliday :: BaseTools.Dictionary -- ^ Status input
             -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
 _addHoliday state _ (name:starth:lengthh:[]) =
     let users = _extractPackagedUsers state
-        uSetgs = _extractUsr users name
+        uSetgs = _getUsr users name
         start = _stringToDate starth
         length = _stringToPositiveInt lengthh
         hol = Holiday start length
@@ -358,7 +363,7 @@ _delHoliday :: BaseTools.Dictionary -- ^ Status input
             -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Modified state, empty result, list of one added user.
 _delHoliday state _ (name:starth:[]) =
     let users = _extractPackagedUsers state
-        uSetgs = _extractUsr users name
+        uSetgs = _getUsr users name
         start = _stringToDate starth
         hol = Holiday start undefined -- length not needed, so no dummy value used
     in case uSetgs of
@@ -380,7 +385,7 @@ _getUserHolidays :: BaseTools.Dictionary -- ^ Status input
                  -> [String] -- ^ Parameter list input: the name of the user.
                  -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, result, empty list
 _getUserHolidays state _ (name:[]) =
-    let uSetgs = _extractUsr (_extractPackagedUsers state) name
+    let uSetgs = _getUsr (_extractPackagedUsers state) name
     in
       case uSetgs of
         Just settings ->
@@ -390,6 +395,25 @@ _getUserHolidays state _ (name:[]) =
              [])
         otherwise -> error $ "User " ++ name ++ " does not exist - get user holidays failed"
 _getUserHolidays _ _ _ = error "Invalid parameters for _getUserHolidays"
+
+-- | get all user's holidays
+_getAllHolidays :: BaseTools.Dictionary -- ^ Status input
+                 -> Bool -- ^ If access via privileged connection. Not queried. FIXME: This is wrong, isn't it?
+                 -> [String] -- ^ Empty, this function takes no parameters.
+                 -> (BaseTools.Dictionary,[[String]],[[String]]) -- ^ Unmodified state, result, empty list
+_getAllHolidays state _ [] =
+    let
+        uSetgs = _extractPackagedUsers state
+        getUser (BaseTools.CfDict userDict : []) = _extractUsr userDict
+        getUser _ = error "Internal error: User dictionary is not properly packed"
+        display (Holiday s l) = [show s, show l]
+        pack (n, u) = [ concat [[n], (display h)] | h <- (holidayList (getUser u)) ]
+    in
+      (state,
+       concat $ map pack (Map.toList uSetgs),
+       [])
+_getAllHolidays _ _ _ = error "Invalid parameters for _getAllHolidays"
+
 
 -- IO part of some network functions.
 
@@ -404,7 +428,7 @@ _debugIo  args state = error $ "Debug IO not yet implemented" ++ head (head args
 _saveUserIo :: [[String]] -- ^ List of one user added or modified in the list of users
            -> BaseTools.Dictionary -- ^ State dictionary, there we will find the user.
            -> IO () -- ^ Returns nothing, just saves to file system for synchronisation.
-_saveUserIo ((usr:[]):[]) state = let uSetgs = (_extractUsr (_extractPackagedUsers state) usr)
+_saveUserIo ((usr:[]):[]) state = let uSetgs = (_getUsr (_extractPackagedUsers state) usr)
                                   in case uSetgs of
                                        Just settings -> _saveUsr 
                                                         settings 
@@ -464,7 +488,7 @@ startHolidayServer cFile cDir wDir = do
                                       ("addh", (SocketServer.Syncing _addHoliday _saveUserIo)),
                                       ("delh", (SocketServer.Syncing _delHoliday _saveUserIo)),
                                       ("getu", (SocketServer.SyncLess _getUserHolidays)),
-                                      -- ("geta", (SocketServer.SyncLess _getAllHolidays)), -- missing
+                                      ("geta", (SocketServer.SyncLess _getAllHolidays)),
                                       -- ("sync", (SocketServer.Syncing _syncDB _syncDBIo)), -- missing
                                       -- ("shutdown", (SocketServer.ShutdownFunc SyncFunc _sync4shutdown _syncDBIo)), -- missing
                                       (".dbg", (SocketServer.Syncing _debug _debugIo))]
