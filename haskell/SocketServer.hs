@@ -51,7 +51,6 @@ where
 
 import qualified Network.Socket as Socket
 import qualified System.IO as SysIO
-import qualified Data.String.Utils as StringUtils
 import qualified Data.Map as Map
 import qualified BaseTools
 import qualified Control.Exception as Exception

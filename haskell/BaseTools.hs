@@ -23,13 +23,13 @@ module BaseTools
      getItems,
      splitBy,
      splitBy',
+     strip,
      mergeWith
     )
 where
 
 import qualified Data.Map as Map
 import qualified System.IO as FileIO
-import qualified Data.String.Utils as StringUtils
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Control.Monad as MControl
@@ -106,7 +106,7 @@ _readSection :: [String] -- ^ Rest of the list to be parsed.
              -> Dictionary -- ^ Current section dictionary.
              -> ([String], Dictionary) -- ^ Returns rest of lines to parse, section dictionary.
 _readSection [] dic = ([], dic)
-_readSection (x:xs) dic = let strippedLine = StringUtils.strip x
+_readSection (x:xs) dic = let strippedLine = strip x
                           in case strippedLine of
                              "" -> _readSection xs dic
                              '#':rs -> _readSection xs dic
@@ -120,7 +120,7 @@ _readConfig :: [String] -- ^ Rest of lines still to parse
             -> Dictionary -- ^ Returns updated config dictionary
 _readConfig [] dic = dic
 _readConfig (x:xs) dic =
-    let strippedLine = StringUtils.strip x
+    let strippedLine = strip x
     in case strippedLine of
          "" -> _readConfig xs dic
          '#':_ -> _readConfig xs dic
@@ -151,6 +151,23 @@ readConfigFile = MControl.liftM (readConfigList . lines) . FileIO.readFile
 
 emptyConfig :: Dictionary
 emptyConfig = Map.empty
+
+-- | Replace that with internal function in Data.Text when switching to Data.Text instead of String.
+-- Function doing both left and right strip of white spaces.
+strip :: String -> String
+strip unstripped = walk unstripped [] 0 0
+    where walk :: String -- ^ Rest of string to process
+               -> String -- ^ Lstripped string. Empty in the beginning, non empty and constant when first chart is found.
+               -> Int -- ^ Number of cheracters in lstripped string. Maximum non wghitespace character position.
+               -> Int -- ^ Position in lstripped string currently processed.
+               -> String -- ^ Result string.
+          walk [] s l _ = take l s
+          walk (x:xs) [] l n | isWspace x = walk xs [] l n
+                             | otherwise = walk xs (x:xs) 1 1
+          walk (x:xs) ys l n | isWspace x = walk xs ys l (n + 1)
+                             | otherwise = walk xs ys (n + 1) (n + 1)
+          isWspace c = c `elem` " \t\r\n"
+
 
 -- | Split string by character. Do not merge mutliple separators in a row but instead
 -- | generate empty strings.
