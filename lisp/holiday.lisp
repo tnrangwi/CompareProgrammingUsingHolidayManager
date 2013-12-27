@@ -218,6 +218,7 @@ Currently everything is synchronized on write so there is nothing to do here."
     (setf a-config (read-global-config config-dir global-config))
 					; dump config
 					; (maphash #'(lambda (k v) (format T "K:~A,V:~A~%" k v)) a-config)
+    (unless (and (gethash "port" a-config) (gethash "name" a-config)) (error "name or port not set in config"))
     (setf port (first (gethash "port" a-config)))
     (setf addr (first (gethash "name" a-config)))
     (if (gethash "privileged" a-config) (setf priv (gethash "privileged" a-config)))
@@ -227,7 +228,7 @@ Currently everything is synchronized on write so there is nothing to do here."
     (setattr attr "user-config" a-config)
     (setattr attr "work-dir" work-dir)
 					; Now instantiate socket-server for remote connections
-    (format T "Create socket-server instance...~%")
+    (format T "Create socket-server instance at address ~A:~A...~%" addr port)
     (setf sock (make-instance 'socket-server :bindaddr addr :port port :init-shared-mem attr :privileged-addresses priv))
 					; Add all service functions
     (format T "Register network functions...")

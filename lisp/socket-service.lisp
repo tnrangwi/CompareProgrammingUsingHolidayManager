@@ -79,6 +79,7 @@ to check if the result was complete just looking at the stream"
 					; convert IP address(es) or names
     
     ;(setf addr (make-inet-address addr))
+    (unless addr (error "Empty address given for socket, this will lead to crash. Omit for default localhost."))
 					; FIXME: try ..catch errors here
     (setf addr (first (host-ent-addresses (get-host-by-name addr))))
     (setf sock (make-instance 'inet-socket :type :stream :protocol :tcp))))
