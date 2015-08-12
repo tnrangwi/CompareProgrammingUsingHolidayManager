@@ -2,7 +2,7 @@
 -- Author: Thorsten Rangwich
 -- See file LICENSE for details on using this code.
 -- This is the script starting the holiday server. To be used on the command line only.
-import qualified System
+import qualified System.Environment
 import qualified System.Console.GetOpt as GetOpt
 import qualified HolidayServer
 
@@ -28,7 +28,7 @@ options =
 parseOptions :: [String] -- ^ List of command line parameters 
              -> IO ([(String, String)], [String]) -- ^ Association list with options, list of non option parameters
 parseOptions args = do
-  progName <- System.getProgName
+  progName <- System.Environment.getProgName
   case GetOpt.getOpt GetOpt.Permute options args of
     (o,n,[])   -> return (o,n)
     (_,_,errs) -> ioError (userError (concat errs ++ GetOpt.usageInfo header options))
@@ -40,7 +40,7 @@ parseOptions args = do
 main :: IO ()
 
 main = do
-  argv <- System.getArgs
+  argv <- System.Environment.getArgs
   (opts, args) <- parseOptions argv
   putStrLn ("Command line options:" ++ (show opts) ++ "; arguments:" ++ (show args))
   HolidayServer.startHolidayServer (lookup "-f" opts) (lookup "-c" opts) (lookup "-w" opts)
