@@ -1,0 +1,8 @@
+Package: basetools
+Version: 0.1-0
+Date: 2015-08-11
+Title: Base tools used everywhere - example package
+License: MIT
+Description: Example package in minimal setup.
+Author: Thorsten Rangwich
+Maintainer: tester <maintainer@example.org>
