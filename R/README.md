@@ -7,4 +7,5 @@ installing the package. I was quite surprised that the namespace / package
 or even module concept (as it is there in Python, Perl, Lisp, Haskell) does
 not work with R without installing a package.
 
-The packages can be installed locally without special rights, a script follows.
+The packages can be installed locally without special rights, use the scripts
+install.sh or install.cmd (latter not yet finished).
