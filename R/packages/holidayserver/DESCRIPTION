@@ -1,0 +1,8 @@
+Package: holidayserver
+Version: 0.1-0
+Date: 2015-08-16
+Title: TCP/IP Holiday Server
+License: MIT
+Description: TPC/IP Server for remote managing holidays.
+Author: Thorsten Rangwich
+Maintainer: tester <maintainer@example.org>
