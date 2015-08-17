@@ -7,7 +7,7 @@ multiple users. Communication is done via an abstract interface, currently using
 See the man page holiday for further details. Software is distributed under the MIT license.
 
 
-Copyright (c) 2006-2010: Thorsten Rangwich
+Copyright (c) 2006-2015: Thorsten Rangwich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -19,6 +19,8 @@ import sys, os, logging, ConfigParser, logging, SocketServer, socket
 from glob import glob
 from os import F_OK, R_OK, W_OK
 
+#FIXME: Replace "chomps" by proper chomps that can handle Windows line breaks as well
+#FIXME: Keep this and write Python 3.x version
 
 #########################################################
 # Helper classes ########################################
@@ -67,9 +69,7 @@ class hContainer:
   def load_usr(self):
     "Loads currently saved holiday calenders for all users."
     for uf in glob('*.usr'):
-#try:
       fd = file(uf, 'r')
-#except IOError:
       u = uf[0 : -4]
       line = fd.readline()
       self.htable[u] = {}
@@ -77,7 +77,6 @@ class hContainer:
       self.htable[u]['times'] = {}
       while True:
 	line = fd.readline()
-#EOF check?
 	if len(line) == 0:
 	  break
 	line = line[0:-1] #chomp
@@ -89,8 +88,6 @@ class hContainer:
 
   def save_usr(self):
     "Save user timetables to config files."
-#error check? try / catch?
-#was kommt da bei integer raus?
     for k, v in self.htable.iteritems():
       fd = open(k + '.usr', 'w')
       fd.write(v['group'] + '\n')
