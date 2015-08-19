@@ -1,1 +1,3 @@
 export(getopt)
+export(readConfigFile)
+export(strip)

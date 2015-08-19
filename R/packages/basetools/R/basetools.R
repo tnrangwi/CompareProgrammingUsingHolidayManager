@@ -48,3 +48,101 @@ getopt <- function(opt, argv) {
   }
   return(result)
 }
+
+strip <- function(s,left=NA) {
+  l <- sub("\r?\n?$", "", s)    #strip newline / carriage return at end
+  if(is.na(left) || left==TRUE)
+    l <- sub("[\t ]*", "", s) #strip leading white space
+  if (is.na(left) || left==FALSE)
+    l <- sub("[\t ]*$", "", l)    #skip trailing white spaces
+  return(l)
+}
+
+readConfigFile <- function(filename) {
+
+  readVar <- function(line) {
+    nl = nchar(line)
+    splitAt <- regexpr("=",line,fixed=TRUE)[1]
+    if (splitAt <= 1) {
+      warning(paste("Invalid line:",line))
+      return(NULL)
+    }
+    key <- substr(line,1,splitAt - 1)
+    if(splitAt == nl) {
+      return(list(key=key,val=TRUE))
+    } else if(substr(line,splitAt + 1,splitAt + 1) == '"') {
+      if(substr(line, nl, nl) != '"') {
+        warning(paste("Malformed string in line:",line))
+        return(NULL)
+      }
+      return(list(key=key,val=substr(line,splitAt + 2, nl - 1)))
+    } else if(length(grep(".",substr(line,splitAt + 1,nl),fixed=TRUE))) {
+      n <- as.double(substr(line,splitAt + 1,nl))
+      if(is.na(n)) {
+        warning(paste("Malformed line, no double:",line))
+        return(NULL)
+      }
+      return(list(key=key,val=n))
+    } else {
+      n <- as.integer(substr(line,splitAt + 1,nl))
+      if(is.na(n)) {
+        warning(paste("Malformed line, no integer:", line))
+        return(NULL)
+      }
+      return(list(key=key,val=n))
+    }
+  }
+  
+  readSection <- function(lines, cfg) {
+    if(length(lines) == 0) {
+      return(list(dict=cfg, lines=lines))
+    } else {
+      l <- strip(lines[1])
+      nl <- nchar(l)
+      if(nl == 0 || substr(l, 1, 1) == '#') {
+        return(readSection(lines[-1:0], cfg))
+      } else if(substr(l, 1, 1) == '[') {
+        return(list(dict=cfg,lines=lines))
+      } else {
+        r = readVar(l)
+        if(is.null(r)) return(r)
+        k <- r[["key"]]
+        cfg[[k]] <- c(cfg[[k]], r[["val"]])
+        return(readSection(lines[-1:0], cfg))
+      }
+    }
+  }
+    
+  readLines <- function(lines, cfg) {
+    if(length(lines) == 0) { #finished
+      return(cfg)
+    } else {
+      l <- strip(lines[1])
+      nl = nchar(l)
+      if (nl == 0 || substr(l, 1, 1) == '#') { #comment line
+        return(readLines(lines[-1:0], cfg))
+      } else if (substr(l, 1, 1) == '[') { #section
+        name = substr(l,2,nl-1)
+        if (name == "" || substr(l, nl, nl) != ']') {
+          warning(paste("Invalid section:",l))
+          return(NULL)
+        }
+        sl <- readSection(lines[-1:0], list())
+        if(is.null(sl)) return(sl)
+        cfg[[name]] <- c(cfg[[name]], list(sl[["dict"]])) #enlist again against flattening
+        return(readLines(sl[["lines"]], cfg))
+      } else { #single value
+        r <- readVar(l)
+        if(is.null(r)) return(r)
+        k <- r[["key"]]
+        cfg[[k]] <- c(cfg[[k]], r[["val"]])
+        return(readLines(lines[-1:0], cfg))
+      }
+    }
+  }
+
+  fd <- base::file(filename, "rt") #Default encoding, no RAW, read in text mode
+  lines <- base::readLines(fd, warn=FALSE)
+  close(fd)
+  return(readLines(lines, list()))
+}
