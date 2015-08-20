@@ -50,15 +50,25 @@ getopt <- function(opt, argv) {
 }
 
 strip <- function(s,left=NA) {
-  l <- sub("\r?\n?$", "", s)    #strip newline / carriage return at end
-  if(is.na(left) || left==TRUE)
-    l <- sub("[\t ]*", "", s) #strip leading white space
-  if (is.na(left) || left==FALSE)
-    l <- sub("[\t ]*$", "", l)    #skip trailing white spaces
-  return(l)
+
+  strip_ <- function (s,left) {
+    l <- sub("\r?\n?$", "", s)    #strip newline / carriage return at end
+    if(is.na(left) || left==TRUE)
+      l <- sub("[\t ]*", "", s)   #strip leading white space
+    if (is.na(left) || left==FALSE)
+      l <- sub("[\t ]*$", "", l)  #skip trailing white spaces
+    return(l)
+  }
+
+  if(typeof(s) == "character") {
+      return(strip_(s,left=left))
+  } else if(typeof(s) == "list") {
+    return(lapply(s, strip, left=left))
+  }
+
 }
 
-readConfigFile <- function(filename) {
+readConfigFile <- function(filename, fromMemory=FALSE) {
 
   readVar <- function(line) {
     nl = nchar(line)
@@ -141,8 +151,24 @@ readConfigFile <- function(filename) {
     }
   }
 
-  fd <- base::file(filename, "rt") #Default encoding, no RAW, read in text mode
-  lines <- base::readLines(fd, warn=FALSE)
-  close(fd)
+  if(typeof(filename) != "character") {
+    warning("Invalid datatype for filename in readConfigFile")
+    return(NULL)
+  }
+
+  if(!fromMemory) {
+    if(length(filename) != 1) {
+      warning("Filename not given or given multiple times")
+      return(NULL)
+    }
+    fd <- try(base::file(filename, "rt"))
+    if(length(attr(fd, "class", exact=TRUE)) && attr(fd, "class") == "try-error") {
+      return(NULL)
+    }
+    lines <- base::readLines(fd, warn=FALSE) #Yes, this may crash if it fails during reading
+    close(fd)
+  } else {
+    lines <- filename
+  }
   return(readLines(lines, list()))
 }
