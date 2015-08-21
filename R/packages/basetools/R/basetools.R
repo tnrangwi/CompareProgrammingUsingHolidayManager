@@ -162,7 +162,7 @@ readConfigFile <- function(filename, fromMemory=FALSE) {
       return(NULL)
     }
     fd <- try(base::file(filename, "rt"))
-    if(length(attr(fd, "class", exact=TRUE)) && attr(fd, "class") == "try-error") {
+    if(class(fd)[1] == "try-error") {
       return(NULL)
     }
     lines <- base::readLines(fd, warn=FALSE) #Yes, this may crash if it fails during reading
