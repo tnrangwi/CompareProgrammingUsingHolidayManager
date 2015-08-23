@@ -79,13 +79,27 @@ It is possible to mix sections with simple configuration
 variables. You just have to make sure not to use a top level
 configuration variable with the same name as a section.
 
-\subsection{Data Types}
-The following data types are supported:
+\subsection{File Format}
+The file has to be written in the following way:
 \itemize{
-\item Integer
-\item Double
-\item Character
-\item Boolean (Neither FALSE not NA are supported)
+\item Standard ASCII file, no encodings are used during file
+read
+\item Leading and trailing newlines and tabs are ignored
+\item A trailing newline, carriage return and newline or newline is ignored as well
+\item Empty lines or lines starting with comment sign "#" are ignored
+\item Sections are started with section names enclosed in brackets
+\item Data is entered as key=value with no spaces, string values may contain
+spaces. The value may be enclosed in double quotes and is not there for
+booleans. (Only TRUE supported, leave out for FALSE).
+}
+
+The following data types can be encoded in the configuration file:
+\itemize{
+\item Character: Data values enclosed in double quotes
+\item Integer: Data not enclosed in double quotes and containing no decimal dot
+\item Double: Data not enclosed in double quotes and containing a decimal dot.
+\item Boolean: Do not enter a value at all, end line with "=". Leave out the
+configuration line at all if you do not wish to set the value.
 }
 
 The content is always converted into the most common data type. So

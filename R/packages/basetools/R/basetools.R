@@ -1,9 +1,5 @@
 #Very simple getopt implementation. For demonstration purposes only.
-#TODO: Documentation: Receives a named list <opt> specifying the expected option
-#      characters with TRUE or FALSE depending on required arguments or not.
-#      Second <argv> is a character vector as received by e.g. commandArgs()
-#      Returns a named list with arguments in position 1 and rest named from
-#      position 0. Options both with and without arguments are not supported.
+#TODO: Accept options with or without arguments when neithe TRUE / FALSE.
 getopt <- function(opt, argv) {
 
   typecheck <- function(v) typeof(v) == "locical" && length(v) == 1
