@@ -45,8 +45,10 @@ rem are affected.
   )
   echo Ignored option:%1
   shift
-  goto parproc
+  goto parms
 :eofparm
+
+echo Check setup >&2
 
 call :chksetup
 if errorlevel 1 goto :error
@@ -60,11 +62,14 @@ goto :success
 rem small subroutines
 rem -----------------
 
+rem Install a single package. Set stop indicator as we cannot
+rem break the loop.
 :instpkg
-rem no if / else as libpath may contain parenthesis
 if %failed%==1 goto :EOF
 echo Install package "%1"
+rem Yes R likes to have a slash here instead of a backslash.
 if "%libpathSet%"=="1" "%rexec%" CMD INSTALL -l "%libpath%" ./packages/"%1"
+rem no if / else as libpath may contain parenthesis
 if not "%libpathSet%"=="1" "%rexec%" CMD INSTALL ./packages/"%1"
 if errorlevel 1 (
   set failed=1
@@ -74,15 +79,16 @@ goto :EOF
 
 :chksetup
 set chk=0
-for /D %%p in (packages) do set chk=1
-if chk==0 (
+rem for won't look into file system without a single wildcard
+for /D %%p in (packag?s) do set chk=1
+if %chk%==0 (
   echo Directory "packages" not found >&2
   ver /invalid 2>NUL
   goto :EOF
 )
 set chk=0
-for /D %%p in (packages\*) do set chk=1
-if chk==0 (
+for /D %%p in (.\packages\*) do set chk=1
+if %chk%==0 (
   echo Not a single package found for installation >&2
   ver /invalid 2>NUL
   goto :EOF
