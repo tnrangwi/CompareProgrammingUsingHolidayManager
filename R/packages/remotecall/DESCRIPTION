@@ -1,0 +1,8 @@
+Package: remotecall
+Version: 0.1-0
+Date: 2015-09-02
+Title: TCP/IP remote procedure call server
+License: MIT
+Description: Simple generic remote call interface operating via TCP/IP sockets.
+Author: Thorsten Rangwich
+Maintainer: tester <maintainer@example.org>
