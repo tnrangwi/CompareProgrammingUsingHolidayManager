@@ -30,7 +30,7 @@ class hContainer:
   "Container class for global context"
 
   htable = {};
-  port = 2001
+  port = 1970
   privileged = None
   logfile = 'logfile.log'
   logger = None
@@ -84,7 +84,7 @@ class hContainer:
 	self.htable[u]['times'][int(d[0])] = int(d[1])
       fd.close()
     if not self.htable.has_key('gast'): #default entry
-      self.htable['gast'] = { 'group' : 'N', 'times' : { 12005 : 6, 3202005 : 2 } };
+      self.htable['gast'] = { 'group' : 'N', 'times' : { 2005001 : 6, 2005320 : 2 } };
 
   def save_usr(self):
     "Save user timetables to config files."
@@ -95,7 +95,6 @@ class hContainer:
 	fd.write(str(d) + '|' + str(l) + '\n')
       fd.close()
       fd = None
-
 
 #########################################################
 
@@ -146,14 +145,14 @@ class hRequestHandler(SocketServer.StreamRequestHandler):
 	self.server.shutdown = True
       elif data[0] == 'addh':
 	if htable.has_key(data[1]):
-	  htable[data[1]]['times'][data[2]] = data[3]
-	  logger.log("Created/changed holiday: U:" + data[1] + ",S:" + data[2] + ",C:" + data[3] + ".")
+	  htable[data[1]]['times'][int(data[2])] = int(data[3])
+	  logger.info("Created/changed holiday: U:" + data[1] + ",S:" + data[2] + ",C:" + data[3] + ".")
 	  self.wfile.write(self.server.format_response(""))
 	else:
 	  self.wfile.write(self.server.format_response('User ' + data[1] + ' does not exist, you are not allowed to do this'))
       elif data[0] == 'delh':
-	logger.log('Deleted holiday: U:' + data[1] + ',S:' + data[2])
-	del htable[data[1]]['times'][data[2]]
+	logger.info('Deleted holiday: U:' + data[1] + ',S:' + data[2])
+	del htable[data[1]]['times'][int(data[2])]
 	self.wfile.write(self.server.format_response(""))
       elif data[0] == 'getu':
 	if htable.has_key(data[1]):
@@ -164,13 +163,13 @@ class hRequestHandler(SocketServer.StreamRequestHandler):
 	  for k, v in d['times'].iteritems():
 	    self.wfile.write(self.server.format_response(u + '|' + str(k) + '|' + str(v)))
       elif data[0] == 'addu':
-	if self.server.ctx.privlist is None or self.client_address[0] in self.server.ctx.privlist:
+	if self.server.ctx.privileged is None or self.client_address[0] in self.server.ctx.privileged:
 	  htable[data[1]] = {}
 	  htable[data[1]]['group'] = data[2]
 	  htable[data[1]]['times'] = {}
 	  self.server.format_response("")
 	else:
-	  logger.warn("getu not allowed from non privileged connection...")
+	  logger.warn("addu not allowed from non privileged connection...")
 	  self.server.format_response("Non privileged connection, you are not allowed to do this")
       else:
 	self.server.format_response("Unknown command:" + data[0] + ".")
@@ -193,6 +192,10 @@ del t
 logger.info('Startup')
 
 server_ctx = hContainer()
+if (server_ctx.privileged is None):
+    logger.info('All access is privileged')
+else:
+    logger.info('Privileged access is restricted')
 
 sock = hSocketServer(hRequestHandler, server_ctx)
 while not sock.shutdown:
