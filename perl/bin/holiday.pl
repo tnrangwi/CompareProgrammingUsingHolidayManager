@@ -33,7 +33,7 @@ use NC::ConfigReader;
 
 my %htable = ();
 
-$htable{'gast'} = { group => 'N' , times => { 12005 => 6, 3202005 => 2 } } ;
+$htable{'gast'} = { group => 'N' , times => { 2005001 => 6, 2005320 => 2 } } ;
 
 =head1 Name
 
