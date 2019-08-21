@@ -193,6 +193,53 @@ for(;;)
 	}
 	last;
       }
+      if ($data[0] eq 'getl')
+      {
+        for my $u (keys(%htable))
+        {
+          $sock->printLine($u);
+        }
+        last;
+      }
+      if ($data[0] eq 'delu')
+      {
+        my $u = $data[1];
+        if ($sock->isPrivileged())
+        {
+          if (exists($htable{$u}))
+          {
+            if (-e "$u.usr")
+            {
+              if(unlink "$u.usr")
+              {
+                delete $htable{$u};
+                $sock->printLine("");
+              }
+              else
+              {
+                logPrint "WARNING", "Cannot remove user file for $u";
+                $sock->printLine("User cannot be deleted - server error");
+              }
+            }
+            else
+            {
+              delete $htable{$u};
+              $sock->printLine("");
+            }
+          }
+          else
+          {
+            logPrint "WARNING", "delu cannot delete non existing user:$u";
+            $sock->printLine("User does not exist:$u");
+          }
+        }
+        else
+        {
+	  logPrint "WARNING", "delu not allowed for this connection";
+	  $sock->printLine("Non privileged connection, you are not allowed to do this.");
+        }
+        last;
+      }
       if ($data[0] eq 'shutdown') { save(); $sock->printLine('done'); $sock->closeConnection(); exit 0; }
       $sock->printLine("unknown command:$data[0]");
     }
@@ -233,7 +280,7 @@ User name.
 =over
 
 =item *
-Day of year (leading digits), year (trailing 4 digits).
+Year (leading 4 digits), day of year (trailing 3 digits), 
 
 =item *
 Number of Days.
@@ -257,7 +304,7 @@ Add/change holiday for a given user with a given first holiday date.
 User name.
 
 =item *
-Day of year (leading digits), year (trailing 4 digits).
+Year (leading 4 digits) and day of year (trailing 3 digits).
 
 =item *
 Number of days.
@@ -280,7 +327,7 @@ Delete holiday for a given user with a given first holiday date.
 User Name
 
 =item *
-Day of year (leading digits), year (trailing 4 digits).
+Year (leading 4 digits), day of year (trailing 3 digits), 
 
 =back
 
@@ -312,6 +359,33 @@ User name.
 
 =item *
 Group.
+
+=back
+
+=head3 Return Lines
+
+Returns one return line containing either an empty string or the error message.
+
+=head2 getl
+
+Provide a list of all configured users.
+
+=head3 Return Lines
+
+Return list of all users, one by line.
+
+=head2 delu
+
+Delete user with all data from the list of all users. Only works over
+privileged connection.
+
+=head3 Parameters
+
+=over
+
+=item *
+
+User name.
 
 =back
 

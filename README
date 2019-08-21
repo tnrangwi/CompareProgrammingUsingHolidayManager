@@ -83,7 +83,7 @@ whatever you configure.
 
    Return Lines
 
-    *   Day of year (leading digits), year (trailing 4 digits).
+    *   Year (leading 4 digits), day of year (trailing 3 digits), 
     *   Number of Days.
 
   geta
@@ -98,7 +98,7 @@ whatever you configure.
    Parameters
 
     *   User name.
-    *   Day of year (leading digits), year (trailing 4 digits).
+    *   Year (leading 4 digits), day of year (trailing 3 digits), 
     *   Number of days.
 
    Return Lines
@@ -113,7 +113,7 @@ whatever you configure.
    Parameters
 
     *   User Name
-    *   Day of year (leading digits), year (trailing 4 digits).
+    *   Year (leading 4 digits), day of year (trailing 3 digits), 
 
    Return Lines
 
