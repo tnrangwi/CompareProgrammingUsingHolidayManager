@@ -1,0 +1,14 @@
+Lisp startup of the server will not work in any operation system
+and may not work without modification with any LISP implementation.
+Even though this script does work in some operating systems, it
+does not work on Mac.
+
+For any operating system using SBCL LIPS, the following should work:
+
+/path/to/sbcl --script startup_holiday.lisp
+
+This will start the script directly instead of passing it through a
+standard interpreter that will have to read the file first before passing
+it to sbcl.
+
+All functions tested with SBCL 1.5.5.
