@@ -41,14 +41,14 @@ The server communication would provide its own separator.")
 	  (T
 	   (setf next (cdr previous))))
     (when next
-      (cond ((< (car next) end) (error "New/changed holiday overlaps following"))
+      (cond ((< (car (first next)) end) (error 'socket-function-error :msg "New/changed holiday overlaps following"))
 	    (T (setf (cdr cur) next)))) ; chain current holiday with next holiday in list
     (cond (previous
 	   (cond ((eql (car (first previous)) start) ; special case: just replace data of previous, no new chaining.
 					; Compare with next not necessary as we have already done that above
 		  (setf (first previous) (cons start days)))
 		 (T                     ; The previous entry really is a previous entry
-		  (cond ((> (+ (car (first previous)) (cdr (first previous)))) (error "Previous entry overlaps new entry"))
+		  (cond ((> (+ (car (first previous)) (cdr (first previous))) (car (first cur))) (error 'socket-function-error :msg "Previous entry overlaps new entry"))
 			(T (setf (cdr previous) cur)))))) ; chain previous to new entry
 	  (T                            ; No previous, set current as new start of the list
 	   (setf (gethash "htable" user-conf) cur)))
