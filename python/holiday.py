@@ -167,12 +167,35 @@ class hRequestHandler(SocketServer.StreamRequestHandler):
 	  htable[data[1]] = {}
 	  htable[data[1]]['group'] = data[2]
 	  htable[data[1]]['times'] = {}
-	  self.server.format_response("")
+	  self.wfile.write(self.server.format_response(""))
 	else:
 	  logger.warn("addu not allowed from non privileged connection...")
-	  self.server.format_response("Non privileged connection, you are not allowed to do this")
+	  self.wfile.write(self.server.format_response("Non privileged connection, you are not allowed to do this"))
+      elif data[0] == 'getl':
+        for u in htable.iterkeys():
+          self.wfile.write(self.server.format_response(u))
+      elif data[0] == 'delu':
+	if self.server.ctx.privileged is None or self.client_address[0] in self.server.ctx.privileged:
+          u = data[1]
+          if htable.has_key(u):
+            if os.path.isfile(u + '.usr'):
+              try:
+                os.remove(u + '.usr')
+                del htable[u]
+                self.wfile.write(self.server.format_response(""))
+              except:
+                logger.warn('Cannot remove user file:'+u)
+                self.wfile.write(self.server.format_response("Server error: Cannot delete"))
+            else:
+              del htable[u]
+              self.wfile.write(self.server.format_response(""))
+          else:
+            self.wfile.write(self.server.format_response("User does not exist:"+u))
+        else:
+	  logger.warn("delu not allowed from non privileged connection...")
+	  self.wfile.write(self.server.format_response("Non privileged connection, you are not allowed to do this"))
       else:
-	self.server.format_response("Unknown command:" + data[0] + ".")
+	self.wfile.write(self.server.format_response("Unknown command:" + data[0] + "."))
     except IndexError:
       self.wfile.write(self.server.format_response('Incomplete command:' + req))
     self.wfile.write("\r\n") #terminate output
