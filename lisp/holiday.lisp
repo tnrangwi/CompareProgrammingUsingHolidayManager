@@ -22,33 +22,27 @@ The server communication would provide its own separator.")
 (defconstant usr-extension "usr"
   "Filename extension used for user holiday files")
 
-
 ;; Helper functions, not exported
 
 (defun add-user-holiday (user-hash user start days &key work-dir (file-sync T))
   "Add a new holiday for a user. Sync file when ready or rollback on error if file-sync is T."
 					; Insert part from read-single-user-config here to insert a single holiday
-  (if (or (>= 0 days) (>= 10000000 start)) (error 'socket-function-error :msg "Invalid start date or duration"))
+  (if (or (>= 0 days) (>= start 10000000)) (error 'socket-function-error :msg "Invalid start date or duration"))
   (let (previous next user-htable sync-args
 		 (user-conf (gethash user user-hash))
 		 (cur (list (cons start days)))
 		 (end (+ start days)))
     (if (eq user-conf NIL) (error "Add user first before adding holidays"))
-    ;(format T "--mark1~%")
     (setf user-htable (gethash "htable" user-conf))
-    ;(format T "--mark2~%")
     (setf previous
 	  (find-previous user-htable (cons start days) :gt-than (lambda (f s) (> (car f) (car s)))))
-    ;(format T "--mark3~%")
     (cond ((eq previous NIL)            ; No previous, but possibly there is a next entry
 	   (unless (eq user-htable NIL) (setf next user-htable)))
 	  (T
 	   (setf next (cdr previous))))
-    ;(format T "--mark4~%")
     (when next
       (cond ((< (car next) end) (error "New/changed holiday overlaps following"))
 	    (T (setf (cdr cur) next)))) ; chain current holiday with next holiday in list
-    ;(format T "--mark5~%")
     (cond (previous
 	   (cond ((eql (car (first previous)) start) ; special case: just replace data of previous, no new chaining.
 					; Compare with next not necessary as we have already done that above
@@ -179,7 +173,7 @@ The server communication would provide its own separator.")
   (unless priv (error "Create user only works over a privileged connection"))
   (let ((user-hash (getattr mem "user-config" :existing-flag T))
 	(user (first argv))
-	(user-conf (make-hash-table :test #'eql)))
+	(user-conf (make-hash-table :test #'equal)))
     (if (gethash user user-hash) (error "User already exists -- cannot create"))
     (setf (gethash "htable" user-conf) NIL)
     (setf (gethash "group" user-conf) (second argv))

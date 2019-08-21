@@ -196,7 +196,7 @@ FIXME: Use with-open-file instead of open file handle"
 
 (defgeneric getattr (attrs key &key existing-flag))
 (defgeneric hasattr (attrs key))
-(defgeneric setattr (attrs key T &key existing-flag))
+(defgeneric setattr (attrs key val &key existing-flag))
 
 
 (defclass attribute-collection ()
