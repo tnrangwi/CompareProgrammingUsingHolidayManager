@@ -2,13 +2,14 @@ BASIC PURPOSE
 
 
 This is my sample project to work into a new programming language.
-Currently there are implementations in Perl, Python, Lisp and
-- unfinished - Haskell. Usually I test this using telnet on the command
+Currently there are implementations in Perl, Python, Lisp, Haskell and
+- unfinished - R, next attempt is powershell.
+Usually I test this using telnet on the command
 line, but there is a VBA client and the Lisp implementation contains
 a client as well.
 
 The origin of this work is the Perl 5.8 server code and the VBA (Excel)
-client. It was written for Nagler & Company (C), Schaittenbach.
+client. It was written for Nagler & Company (C), Schnaittenbach.
 Its usage simply was to have a "arbitrary software project
 doing something useful". It was used for training in revision control
 software and for a business presentation about advanced software management.
@@ -23,7 +24,7 @@ even a standard socket interface.
 
 
 
-WHAT DOES IT
+FUNCTIONALITY
 
 
 In every programming languages there is a remote procedure call server
@@ -38,3 +39,136 @@ Admin users may create new users, standard users are allowed to add,
 delete and modify holiday schedules. If you know the protocol,
 it is easy for any userto modify holiday schedules for an arbitrary
 user using telnet.
+
+DOCUMENTATION
+
+Documentation is maintained in Perl code and can be read like a man page
+using
+
+perldoc perl/bin/holiday.pl
+
+Text version of the interface was generated using
+
+perldoc -otext perl/bin/holiday.pl >README.in
+
+and is included here.
+
+INTERFACE SPECIFICATION
+
+Just start one of the servers and connect to the configured port at
+localhost by telnet localhost <port>. Port may be 2001 or 1970 or
+whatever you configure.
+
+
+    Currently a socket interface at the port chosen in the config file is
+    used to access the holiday server. Communication is done by providing a
+    line in this format:
+
+    "Command|Arg1|Arg2"
+
+    terminated with "CR LF". Result data sets are provided in the format
+
+    "Par1|Par2|..."
+
+    Results vary from zero to many lines of output. See the specification of
+    NC::ServerSocket for technical protocol details.
+
+  getu
+
+    Returns holiday calender for the given user.
+
+   Parameters
+
+    *   User name.
+
+   Return Lines
+
+    *   Day of year (leading digits), year (trailing 4 digits).
+    *   Number of Days.
+
+  geta
+
+    Returns holiday calender for all users. See "getu" for details. This
+    adds a first return parameter containing the user name.
+
+  addh
+
+    Add/change holiday for a given user with a given first holiday date.
+
+   Parameters
+
+    *   User name.
+    *   Day of year (leading digits), year (trailing 4 digits).
+    *   Number of days.
+
+   Return Lines
+
+    Returns one return line containing either an empty string or the error
+    message.
+
+  delh
+
+    Delete holiday for a given user with a given first holiday date.
+
+   Parameters
+
+    *   User Name
+    *   Day of year (leading digits), year (trailing 4 digits).
+
+   Return Lines
+
+    Returns one return line containing either an empty string or the error
+    message.
+
+  shutdown
+
+    Requests holiday server to terminate, saving all holidays.
+
+   Return Lines
+
+    Returns one line either containing an error message or "Done".
+
+  addu
+
+    Add user with the given group to the system. This is only allowed via
+    privileged connections.
+
+   Parameters
+
+    *   User name.
+    *   Group.
+
+   Return Lines
+
+    Returns one return line containing either an empty string or the error
+    message.
+
+  getl
+
+    Get list of all users (not implemented in all languages yet).
+
+   Return Lines
+
+    Returns one line per existing user, containing the user.
+
+  delu
+
+    Delete a user from database (not implemented in all languages yet).
+
+   Parameters
+
+    *   User name.
+
+   Return Lines
+
+    Returns one return line containing either an empty strong or the error
+    message.
+
+Author
+
+    Thorsten Rangwich (written for Nagler & Company, modified afterwards).
+
+License
+
+    See file LICENSE for details.
+
