@@ -1,4 +1,5 @@
 #!/usr/local/bin/pwsh
+$ErrorActionPreference="Stop"
 
 function Read-ConfigFile ([String]$fn) {
     #FIXME: Error handling not there at all.
@@ -48,8 +49,7 @@ function Read-ConfigFile ([String]$fn) {
                 }
                 Break
             } default {
-                Write-Host "Parser error - unsupported line in config file"
-                return $null
+                throw "Parser error - unsupported line in config file:'" + $switch.Current + "'"
             }
         }
     }
