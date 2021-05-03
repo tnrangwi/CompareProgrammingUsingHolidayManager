@@ -5,7 +5,7 @@ Import-Module ConfigReader
 
 $cfgFile = "${PSScriptRoot}/etc/holiday.conf"
 if (Test-Path $cfgFile) {
-    $cfg = Read-ConfigFile $cfgFile
+    $cfg = ConfigReader\Read-ConfigFile $cfgFile
 } else {
     $cfg = @{ "global" = @( @{ "port"=@(1970); "server"=@("localhost") } ) }
 }
