@@ -1,4 +1,8 @@
 #!/usr/local/bin/pwsh
+#Terminate on powershell error in function or cmd-let. External
+#commands still need to be checked with $LastExitCode, $? checks
+#both, $Error contains a full set of last errors and can be cleared.
+#This preference can be reset on command basis.
 $ErrorActionPreference="Stop"
 $Env:PSModulePath="${Env:PSModulePath}:$PSScriptRoot/lib"
 Import-Module ConfigReader
